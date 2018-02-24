@@ -1,5 +1,5 @@
 {
-  "name": "poker-hand",
+  "name": "poker-hand-evaluator",
   "version": "1.0.0",
   "description": "Poker Texas Holdem Hand Evaluator using Cactus Kev's algorithm",
   "keywords": "poker, evaluator, Cactus Kev, algorithm, texas holdem",

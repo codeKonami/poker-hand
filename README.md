@@ -13,13 +13,13 @@ It works on browser side too although the lib is a little heavy ~102 Kb because 
 Node.js >= 6
 
 ```sh
-npm install --save poker-hand
+npm install --save poker-hand-evaluator
 ```
 
 ### How to use
 
 ```js
-const PokerHand = require('poker-hand');
+const PokerHand = require('poker-hand-evaluator');
 
 const myPokerHand = new PokerHand('KS KH QC AH AD');
 const hisPokerHand = new PokerHand('KD KC AS AH TD')
