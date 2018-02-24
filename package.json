@@ -1,0 +1,30 @@
+{
+  "name": "poker-hand",
+  "version": "1.0.0",
+  "description": "Poker Texas Holdem Hand Evaluator using Cactus Kev's algorithm",
+  "keywords": "poker, evaluator, Cactus Kev, algorithm, texas holdem",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon example/index.js",
+    "test": "jest && node test/complete.js",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codeKonami/poker-hand.git"
+  },
+  "author": {
+    "name": "codeKonami",
+    "email": "thomas.foricher@gmail.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.2.1",
+    "babel-preset-es2015": "^6.22.0",
+    "jest": "^22.3.0",
+    "nodemon": "^1.15.1",
+    "webpack": "^3.11.0"
+  }
+}

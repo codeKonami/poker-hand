@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Poker Texas Holdem Cactus Kev's algorithm</title>
+  </head>
+  <body>
+    <label for="my-hand">My Hand</label>
+    <input type="text" id="my-hand" name="my-hand" value="KS KH QC QD AD">
+
+    <label for="his-hand">His Hand</label>
+    <input type="text" id="his-hand" name="his-hand" value="KD KC AS AH TD">
+
+    <button type="button" id="compare" name="compare">Find winner</button>
+
+    <span id="result">I loose</span>
+
+  </body>
+  <script src="dist/pokerhand.min.js"></script>
+  <script>
+    const myPokerHand = new PokerHand('KS KH QC QD AD');
+    const hisPokerHand = new PokerHand('KD KC AS AH TD');
+
+    const $myHand = document.getElementById('my-hand');
+    const $hisHand = document.getElementById('his-hand');
+    const $compare = document.getElementById('compare');
+    const $result = document.getElementById('result');
+
+    $compare.addEventListener('click', function() {
+      let result = -1;
+      try {
+        myPokerHand.update($myHand.value);
+        hisPokerHand.update($hisHand.value);
+        result = myPokerHand.compareWith(hisPokerHand);
+      } catch (e) {
+        $result.innerHTML = e;
+      }
+
+      if (result === 1) {
+        $result.innerHTML = 'I win';
+      } else if (result === 2) {
+        $result.innerHTML = 'I loose';
+      } else if (result === 3) {
+        $result.innerHTML = 'Tie';
+      } else {
+        $result.innerHTML = 'Error';
+      }
+
+    });
+  </script>
+</html>
