@@ -1,63 +1,58 @@
-const sanitize = require('./sanitize');
+import { describe, it, expect } from 'vitest';
+import { parseHand } from './validate';
 
-describe('Sanitize', () => {
+describe('parseHand', () => {
   describe('Errors', () => {
-
     it('Should throw if nothing passed', () => {
       expect(() => {
-        sanitize();
+        parseHand(undefined);
       }).toThrow();
     });
 
-    it('Should throw if empty (\'\') is passed', () => {
+    it("Should throw if empty ('') is passed", () => {
       expect(() => {
-        sanitize('');
+        parseHand('');
       }).toThrow();
     });
 
     it('Should throw if an integer is passed', () => {
       expect(() => {
-        sanitize(2);
+        parseHand(2);
       }).toThrow();
     });
 
     it('Should throw if a string with a length !== 14 is passed', () => {
       expect(() => {
-        sanitize('KS 2H 5C JD');
+        parseHand('KS 2H 5C JD');
       }).toThrow();
     });
 
-    it('Should throw if we can\'t find 5 cards', () => {
+    it("Should throw if we can't find 5 cards", () => {
       expect(() => {
-        sanitize('KSD 2HD D5C JD');
+        parseHand('KSD 2HD D5C JD');
       }).toThrow();
     });
 
     it('Should throw if there are duplicates', () => {
       expect(() => {
-        sanitize('KS 2H 5C JD JD');
+        parseHand('KS 2H 5C JD JD');
       }).toThrow();
     });
 
     it('Should throw if there are impossible cards', () => {
       expect(() => {
-        sanitize('KS 2H 5C ZK WS');
+        parseHand('KS 2H 5C ZK WS');
       }).toThrow();
     });
-
   });
 
   describe('Valid Hands', () => {
-
     it('Should return an array of cards', () => {
-      expect(sanitize('KS 2H 5C KD AS'))
-        .toEqual(['KS', '2H', '5C', 'KD', 'AS']);
+      expect(parseHand('KS 2H 5C KD AS')).toEqual(['KS', '2H', '5C', 'KD', 'AS']);
     });
 
     it('Should return an array of cards in UpperCase', () => {
-      expect(sanitize('JH QD 8S 5c 6d'))
-        .toEqual(['JH', 'QD', '8S', '5C', '6D']);
+      expect(parseHand('JH QD 8S 5c 6d')).toEqual(['JH', 'QD', '8S', '5C', '6D']);
     });
-
   });
 });

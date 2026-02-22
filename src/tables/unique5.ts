@@ -1,10 +1,8 @@
-/*
- * this is a table lookup for all non-flush hands consisting
- * of five unique ranks (i.e.  either Straights or High Card
- * hands).  it's similar to the above "flushes" array.
+/**
+ * Table lookup for all non-flush hands consisting of five unique ranks
+ * (i.e. either Straights or High Card hands).
  */
-
-module.exports = [
+export const unique5: readonly number[] = [
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 1608, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 7462, 0, 0, 0, 0, 0, 0, 0, 7461, 0, 0,  0,  7460,  0,

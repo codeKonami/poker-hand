@@ -1,26 +1,24 @@
-const PokerHand = require('./pokerhand');
+import { describe, it, expect } from 'vitest';
+import { PokerHand } from './poker-hand';
 
 const myPokerHand = new PokerHand('KS KH QC AH AD');
 const hisPokerHand = new PokerHand('KD KC AS AH TD');
 
 describe('Constructor', () => {
   describe('Errors', () => {
-
     it('Should throw if not a valid hand passed', () => {
       expect(() => {
-        const pokerHand = new PokerHand('KS 2H 5C ZD WD');
+        new PokerHand('KS 2H 5C ZD WD');
       }).toThrow();
     });
-
   });
 
   describe('Test Methods', () => {
-
     it('describe() should return an object', () => {
       expect(myPokerHand.describe()).toEqual({
-        hand: [ 'KS', 'KH', 'QC', 'AH', 'AD' ],
+        hand: ['KS', 'KH', 'QC', 'AH', 'AD'],
         score: 2468,
-        rank: 'TWO_PAIRS'
+        rank: 'TWO_PAIRS',
       });
     });
 
@@ -32,21 +30,18 @@ describe('Constructor', () => {
       expect(myPokerHand.getScore()).toEqual(2468);
     });
 
-    it('getRank() should return the score', () => {
+    it('getRank() should return the rank', () => {
       expect(myPokerHand.getRank()).toEqual('TWO_PAIRS');
     });
-
   });
 
   describe('compareWith method', () => {
     describe('Errors', () => {
-
       it('Should throw if not a valid hand to compare with', () => {
         expect(() => {
-          myPokerHand.compareWith('foo');
+          myPokerHand.compareWith('foo' as unknown as PokerHand);
         }).toThrow();
       });
-
     });
 
     describe('CompareWith example', () => {
@@ -54,6 +49,5 @@ describe('Constructor', () => {
         expect(myPokerHand.compareWith(hisPokerHand)).toEqual(1);
       });
     });
-
   });
 });
