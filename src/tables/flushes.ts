@@ -1,11 +1,9 @@
-/*
- * this is a table lookup for all "flush" hands (e.g.  both
- * flushes and straight-flushes.  entries containing a zero
- * mean that combination is not possible with a five-card
- * flush hand.
+/**
+ * Table lookup for all "flush" hands (both flushes and straight-flushes).
+ * Entries containing a zero mean that combination is not possible with
+ * a five-card flush hand.
  */
-
-module.exports = [
+export const flushes: readonly number[] = [
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 1599, 0, 0, 0, 0, 0, 0, 0, 1598, 0, 0, 0, 1597, 0, 1596,
