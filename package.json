@@ -2,7 +2,13 @@
   "name": "poker-hand-evaluator",
   "version": "2.0.0",
   "description": "Poker Texas Holdem Hand Evaluator using Cactus Kev's algorithm",
-  "keywords": ["poker", "evaluator", "Cactus Kev", "algorithm", "texas holdem"],
+  "keywords": [
+    "poker",
+    "evaluator",
+    "Cactus Kev",
+    "algorithm",
+    "texas holdem"
+  ],
   "type": "module",
   "main": "./dist/poker-hand-evaluator.cjs",
   "module": "./dist/poker-hand-evaluator.js",
@@ -14,13 +20,18 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "tsx src/bench.ts"
+    "bench": "tsx src/bench.ts",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
   },
   "repository": {
     "type": "git",
@@ -32,10 +43,11 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "vite-plugin-dts": "^3.7.2",
-    "vitest": "^1.2.2",
-    "tsx": "^4.7.0"
+    "vitest": "^1.2.2"
   }
 }

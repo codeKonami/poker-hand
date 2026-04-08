@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { PokerHand } from './poker-hand';
 
 const myPokerHand = new PokerHand('KS KH QC AH AD');

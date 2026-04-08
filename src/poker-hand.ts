@@ -1,7 +1,7 @@
-import { parseHand } from './evaluate/validate';
 import { evaluateHand } from './evaluate/evaluate';
 import { scoreToRank } from './evaluate/rank';
-import { HandRank, CompareResult } from './types';
+import { parseHand } from './evaluate/validate';
+import { CompareResult, type HandRank } from './types';
 
 export class PokerHand {
   private cards: string[];
