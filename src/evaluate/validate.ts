@@ -31,13 +31,13 @@ export function parseHand(hand: unknown): string[] {
   }
 
   if (hand.trim().length !== 14) {
-    throw new Error('Incorrect hand');
+    throw new Error('Incorrect hand: expected 14 characters (5 cards separated by spaces)');
   }
 
   const handAsArray = hand.toUpperCase().trim().split(' ');
 
   if (handAsArray.length !== 5) {
-    throw new Error('Incorrect hand');
+    throw new Error('Incorrect hand: expected exactly 5 cards');
   }
 
   if (new Set(handAsArray).size !== 5) {
@@ -45,7 +45,7 @@ export function parseHand(hand: unknown): string[] {
   }
 
   if (handAsArray.filter(isValidCard).length !== 5) {
-    throw new Error('Incorrect hand');
+    throw new Error('Incorrect hand: one or more cards are invalid');
   }
 
   return handAsArray;

@@ -6,7 +6,14 @@ import type { Rank, Suit } from '../types';
  * representation used by the Cactus Kev algorithm.
  */
 export function cardToInt(card: string): number {
-  const [order, prime] = ranks.get(card[0] as Rank)!;
-  const suit = suits.get(card[1] as Suit)!;
+  const rankEntry = ranks.get(card[0] as Rank);
+  if (!rankEntry) {
+    throw new Error(`Invalid card rank: "${card[0]}"`);
+  }
+  const suit = suits.get(card[1] as Suit);
+  if (suit === undefined) {
+    throw new Error(`Invalid card suit: "${card[1]}"`);
+  }
+  const [order, prime] = rankEntry;
   return prime | (order << 8) | suit | (1 << (16 + order));
 }

@@ -16,7 +16,7 @@ export class PokerHand {
 
   describe(): { hand: string[]; score: number; rank: HandRank } {
     return {
-      hand: this.cards,
+      hand: [...this.cards],
       score: this.score,
       rank: this.handRank,
     };
@@ -35,9 +35,12 @@ export class PokerHand {
   }
 
   update(hand: string): void {
-    this.cards = parseHand(hand);
-    this.score = evaluateHand(this.cards);
-    this.handRank = scoreToRank(this.score);
+    const cards = parseHand(hand);
+    const score = evaluateHand(cards);
+    const handRank = scoreToRank(score);
+    this.cards = cards;
+    this.score = score;
+    this.handRank = handRank;
   }
 
   compareWith(hand: PokerHand): CompareResult {
