@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Version Bump & Publish
+    runs-on: ubuntu-latest
+
+    # Skip version bump commits from the bot to avoid infinite loops
+    if: github.event.head_commit.author.username != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Get PR number and determine version bump
+        id: get-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commits = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+            });
+            const merged = commits.data.find(pr => pr.merged_at);
+            if (!merged) {
+              core.info('No merged PR found for this commit. Skipping release.');
+              core.setOutput('skip', 'true');
+              return;
+            }
+            core.setOutput('pr_number', merged.number);
+            core.setOutput('skip', 'false');
+
+            const labels = merged.labels.map(l => l.name);
+            core.setOutput('labels', labels.join(','));
+
+            if (labels.includes('skip-release')) {
+              core.info('skip-release label found. Skipping.');
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            let bump = 'patch';
+            if (labels.includes('major')) bump = 'major';
+            else if (labels.includes('minor')) bump = 'minor';
+            core.setOutput('bump', bump);
+            core.info(`Detected bump: ${bump} from labels: ${labels.join(', ')}`);
+
+      - name: Setup Node.js
+        if: steps.get-pr.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        if: steps.get-pr.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Test
+        if: steps.get-pr.outputs.skip != 'true'
+        run: npm test
+
+      - name: Build
+        if: steps.get-pr.outputs.skip != 'true'
+        run: npm run build
+
+      - name: Configure git
+        if: steps.get-pr.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        if: steps.get-pr.outputs.skip != 'true'
+        id: version
+        run: |
+          npm version ${{ steps.get-pr.outputs.bump }} -m "chore: release v%s"
+          echo "new_version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm
+        if: steps.get-pr.outputs.skip != 'true'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push version commit and tag
+        if: steps.get-pr.outputs.skip != 'true'
+        run: git push origin master --follow-tags
+
+      - name: Create GitHub Release
+        if: steps.get-pr.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.new_version }}';
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              name: `v${version}`,
+              generate_release_notes: true,
+            });
