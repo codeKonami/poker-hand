@@ -37,4 +37,8 @@ describe('Ranking Hand examples', () => {
   it('323 should return FLUSH', () => {
     expect(scoreToRank(323)).toBe('FLUSH');
   });
+
+  it('11 should return FOUR_OF_A_KIND', () => {
+    expect(scoreToRank(11)).toBe('FOUR_OF_A_KIND');
+  });
 });

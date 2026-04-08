@@ -35,6 +35,31 @@ describe('Constructor', () => {
     });
   });
 
+  describe('update method', () => {
+    it('Should update hand, score and rank', () => {
+      const hand = new PokerHand('KS KH QC AH AD');
+      hand.update('AC KC QC JC TC');
+      expect(hand.getRank()).toEqual('ROYAL_FLUSH');
+      expect(hand.getScore()).toEqual(1);
+    });
+
+    it('Should throw on invalid hand', () => {
+      const hand = new PokerHand('KS KH QC AH AD');
+      expect(() => hand.update('INVALID')).toThrow();
+      // Original state should be preserved after failed update
+      expect(hand.getRank()).toEqual('TWO_PAIRS');
+    });
+  });
+
+  describe('describe method encapsulation', () => {
+    it('Should not allow mutation of internal state via describe()', () => {
+      const hand = new PokerHand('KS KH QC AH AD');
+      const desc = hand.describe();
+      desc.hand[0] = 'FAKE';
+      expect(hand.describe().hand[0]).toEqual('KS');
+    });
+  });
+
   describe('compareWith method', () => {
     describe('Errors', () => {
       it('Should throw if not a valid hand to compare with', () => {
@@ -44,10 +69,18 @@ describe('Constructor', () => {
       });
     });
 
-    describe('CompareWith example', () => {
-      it('Should return 1 on this example', () => {
-        expect(myPokerHand.compareWith(hisPokerHand)).toEqual(1);
-      });
+    it('Should return Win (1) when this hand is better', () => {
+      expect(myPokerHand.compareWith(hisPokerHand)).toEqual(1);
+    });
+
+    it('Should return Loss (2) when the other hand is better', () => {
+      expect(hisPokerHand.compareWith(myPokerHand)).toEqual(2);
+    });
+
+    it('Should return Tie (3) when both hands are equal', () => {
+      const hand1 = new PokerHand('KS KH QC AH AD');
+      const hand2 = new PokerHand('KD KC QS AC AH');
+      expect(hand1.compareWith(hand2)).toEqual(3);
     });
   });
 });
