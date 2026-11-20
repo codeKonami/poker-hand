@@ -44,7 +44,7 @@ export class PokerHand {
   }
 
   compareWith(hand: PokerHand): CompareResult {
-    if (!(hand instanceof PokerHand)) {
+    if (!hand || typeof hand.getScore !== 'function') {
       throw new Error('Incorrect hand to compare with');
     }
 
