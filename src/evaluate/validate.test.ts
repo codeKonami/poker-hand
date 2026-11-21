@@ -44,6 +44,13 @@ describe('parseHand', () => {
         parseHand('KS 2H 5C ZK WS');
       }).toThrow();
     });
+
+    it('Should throw if a card contains a non-ASCII character that uppercases to a valid one', () => {
+      // "Aſ" would normalize to "AS" and pass validation without the ASCII guard.
+      expect(() => {
+        parseHand('Aſ 2H 5C JD KH');
+      }).toThrow('Incorrect hand: one or more cards are invalid');
+    });
   });
 
   describe('Valid Hands', () => {

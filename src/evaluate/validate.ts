@@ -34,6 +34,10 @@ export function parseHand(hand: unknown): string[] {
     throw new Error('Incorrect hand: expected 14 characters (5 cards separated by spaces)');
   }
 
+  if (/[^\x00-\x7f]/.test(hand)) {
+    throw new Error('Incorrect hand: one or more cards are invalid');
+  }
+
   const handAsArray = hand.toUpperCase().trim().split(' ');
 
   if (handAsArray.length !== 5) {
