@@ -2,7 +2,13 @@
   "name": "poker-hand-evaluator",
   "version": "2.0.0",
   "description": "Poker Texas Holdem Hand Evaluator using Cactus Kev's algorithm",
-  "keywords": ["poker", "evaluator", "Cactus Kev", "algorithm", "texas holdem"],
+  "keywords": [
+    "poker",
+    "evaluator",
+    "Cactus Kev",
+    "algorithm",
+    "texas holdem"
+  ],
   "type": "module",
   "main": "./dist/poker-hand-evaluator.cjs",
   "module": "./dist/poker-hand-evaluator.js",
@@ -14,13 +20,19 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "tsx src/bench.ts"
+    "bench": "tsx src/bench.ts",
+    "compat": "vitest run --config compat/vitest.config.ts",
+    "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
+    "compat:publint": "publint --strict",
+    "compat:attw": "attw --pack ."
   },
   "repository": {
     "type": "git",
@@ -32,10 +44,14 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@types/jsdom": "^21.1.7",
+    "jsdom": "^26.1.0",
+    "publint": "^0.3.25",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "vite-plugin-dts": "^3.7.2",
-    "vitest": "^1.2.2",
-    "tsx": "^4.7.0"
+    "vitest": "^1.2.2"
   }
 }

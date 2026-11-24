@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -10,5 +11,9 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: 'poker-hand-evaluator',
     },
+  },
+  test: {
+    // compat/ runs against packed tarballs: `npm run compat`.
+    include: ['src/**/*.test.ts'],
   },
 });
