@@ -16,6 +16,7 @@ function* everyFiveCardHand() {
 
 it(
   'scores and ranks all 2,598,960 five-card hands exactly like 1.0.1',
+  { timeout: 300_000 },
   () => {
     const Reference = pokerHandClass(reference);
     const Target = pokerHandClass(target);
@@ -37,5 +38,4 @@ it(
     expect(mismatches).toEqual([]);
     expect(count).toBe(2_598_960);
   },
-  { timeout: 300_000 },
 );

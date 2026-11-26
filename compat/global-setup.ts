@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import type { GlobalSetupContext } from 'vitest/node';
+import type { TestProject } from 'vitest/node';
 
 /**
  * Installs two tarballs into throwaway consumer projects:
@@ -67,7 +67,7 @@ function install(tarball: string, dir: string): CompatConsumer {
   return { dir, version, tarball };
 }
 
-export default function setup({ provide }: GlobalSetupContext) {
+export default function setup({ provide }: TestProject) {
   verifyReference();
   const workdir = mkdtempSync(join(tmpdir(), 'poker-hand-compat-'));
 
