@@ -11,12 +11,14 @@ import {
 } from './consumer';
 
 /*
- * Characterization only: which of these paths stay public is decided by
- * "Imports profonds de la 1.0.1 : lesquels font partie du contrat public ?"
- * (https://github.com/codeKonami/poker-hand/issues/16).
+ * The deep paths of 1.0.1. "Imports profonds de la 1.0.1"
+ * (https://github.com/codeKonami/poker-hand/issues/16) keeps serving all of them in 1.x, `pkg/`
+ * aside. All but package.json and the UMD build are deprecated, in the docs only.
  *
- * Every module 1.0.1 published (tests, example and build files aside) is required
- * from both packages and observed the same way; the observations must match.
+ * Every module 1.0.1 published (tests and build files aside), and every other form 1.0.1
+ * resolved, is required and imported from both packages and observed the same way; the
+ * observations must match. A form that only resolves in 1.1.0 (an import without `.js`, say)
+ * must behave like the 1.0.1 form it stands for.
  */
 
 const digest = (value: unknown) => createHash('sha1').update(JSON.stringify(value)).digest('hex');
