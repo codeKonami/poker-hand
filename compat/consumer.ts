@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { inject } from 'vitest';
@@ -69,11 +70,14 @@ function consumer(provided: CompatConsumer): Consumer {
 export const reference = consumer(inject('reference'));
 export const target = consumer(inject('target'));
 
+const sha1 = (file: string) => createHash('sha1').update(readFileSync(file)).digest('hex');
+
 /**
- * True when the suite runs against 1.0.1 itself (COMPAT_TARGET=reference).
- * Compares tarballs, not versions: the repo stays at 1.0.1 until changesets bumps it.
+ * True when the suite runs against 1.0.1 itself: COMPAT_TARGET=reference, or any copy of its
+ * tarball, such as the one `npm pack poker-hand-evaluator@1.0.1` downloads from the registry.
+ * Compares tarball contents, not versions: the repo stays at 1.0.1 until changesets bumps it.
  */
-export const isReferenceRun = target.tarball === reference.tarball;
+export const isReferenceRun = sha1(target.tarball) === sha1(reference.tarball);
 
 /**
  * The PokerHand class of a consumer, wherever its entry point puts it.

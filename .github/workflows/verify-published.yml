@@ -1,0 +1,257 @@
+name: Verify published
+run-name: Verify poker-hand-evaluator@${{ inputs.version }} as npm serves it
+
+# Checks a version of poker-hand-evaluator as the npm registry and the CDNs serve it, after a
+# release. Nothing triggers it but a person, by hand:
+#   Actions > Verify published > Run workflow; or `gh workflow run verify-published.yml -f version=next`.
+# It only reads from npm and the CDNs. It publishes nothing and needs no secret.
+#
+#   resolve     the version or dist-tag, to one version on npm
+#   provenance  npm audit signatures, then the provenance attestation: present, and made by
+#               release.yml on master of this repository (1.0.1, from 2018, has none)
+#   cdn         unpkg and jsDelivr serve the registry's dist/pokerhand.min.js, and a <script>
+#               of it (jsdom) exposes window.PokerHand
+#   node6       npm install from the registry with Node 6 and its npm 3, then compat/smoke/
+#   compat      compat/ on Node 22, 24 and 26 against the registry tarball
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version or dist-tag on npm (1.1.0-next.0, next, latest…)
+        required: true
+        default: latest
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  PACKAGE: poker-hand-evaluator
+
+jobs:
+  resolve:
+    name: Resolve ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Resolve the version or dist-tag on npm
+        id: resolve
+        env:
+          SPEC: ${{ inputs.version }}
+        run: |
+          packument="$(npm view "$PACKAGE" dist-tags versions time --json)"
+          if jq -e --arg spec "$SPEC" '."dist-tags" | has($spec)' <<< "$packument" > /dev/null; then
+            version="$(jq -r --arg spec "$SPEC" '."dist-tags"[$spec]' <<< "$packument")"
+          elif jq -e --arg spec "$SPEC" '.versions | index($spec) != null' <<< "$packument" > /dev/null; then
+            version="$SPEC"
+          else
+            echo "::error::$SPEC is neither a version nor a dist-tag of $PACKAGE on npm."
+            exit 1
+          fi
+          echo "$SPEC is $PACKAGE@$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "### $PACKAGE@$version"
+            echo
+            echo "Input \`$SPEC\`, published $(jq -r --arg v "$version" '.time[$v]' <<< "$packument"). Dist-tags on npm:"
+            echo
+            echo '```json'
+            jq '."dist-tags"' <<< "$packument"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  provenance:
+    name: Provenance
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: npm audit signatures, in a throwaway project
+        run: |
+          mkdir "$RUNNER_TEMP/audit"
+          cd "$RUNNER_TEMP/audit"
+          echo '{ "name": "audit", "private": true }' > package.json
+          npm install "$PACKAGE@$VERSION" --ignore-scripts --no-audit --no-fund
+          npm audit signatures
+          npm audit signatures --json --include-attestations > "$RUNNER_TEMP/audit-signatures.json"
+      # A failure, not a warning: latest only gets a version that npm can tie to release.yml.
+      - name: Provenance attestation on npm
+        run: |
+          attestations="$(npm view "$PACKAGE@$VERSION" dist.attestations --json)"
+          if [[ -z "$attestations" ]]; then
+            echo "::error title=Provenance absent::$PACKAGE@$VERSION has no provenance on npm (no dist.attestations)."
+            echo "**Provenance: absent.** npm has no attestation for $PACKAGE@$VERSION." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          jq . <<< "$attestations"
+          if ! jq -e '.provenance.predicateType == "https://slsa.dev/provenance/v1"' <<< "$attestations" > /dev/null; then
+            echo "::error title=Provenance absent::$PACKAGE@$VERSION has attestations, but no SLSA provenance."
+            exit 1
+          fi
+          if ! jq -e --arg name "$PACKAGE" --arg version "$VERSION" \
+            '.verified | any(.name == $name and .version == $version and .attestations.provenance != null)' \
+            "$RUNNER_TEMP/audit-signatures.json" > /dev/null; then
+            echo "::error title=Provenance not verified::npm audit signatures did not verify the attestation of $PACKAGE@$VERSION."
+            exit 1
+          fi
+      - name: Provenance names release.yml, on master of this repository
+        env:
+          REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          expected="$(jq -cn --arg repository "$REPOSITORY" \
+            '{repository: $repository, path: ".github/workflows/release.yml", ref: "refs/heads/master"}')"
+          url="$(npm view "$PACKAGE@$VERSION" dist.attestations.url)"
+          statement="$(curl --fail --silent --show-error "$url" \
+            | jq -r '.attestations[] | select(.predicateType == "https://slsa.dev/provenance/v1") | .bundle.dsseEnvelope.payload' \
+            | base64 --decode)"
+          workflow="$(jq -c '.predicate.buildDefinition.externalParameters.workflow' <<< "$statement")"
+          run="$(jq -r '.predicate.runDetails.metadata.invocationId' <<< "$statement")"
+          echo "workflow: $workflow"
+          echo "run: $run"
+          if ! jq -e --argjson expected "$expected" '. == $expected' <<< "$workflow" > /dev/null; then
+            echo "::error title=Provenance from elsewhere::$PACKAGE@$VERSION was built by $workflow, not by $expected."
+            exit 1
+          fi
+          echo "**Provenance: present**, from $run." >> "$GITHUB_STEP_SUMMARY"
+
+  cdn:
+    name: CDN (${{ matrix.cdn }})
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cdn: unpkg
+            base: https://unpkg.com
+          - cdn: jsDelivr
+            base: https://cdn.jsdelivr.net/npm
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      # jsdom, for the <script>
+      - run: npm ci
+      - name: ${{ matrix.cdn }} serves the registry's dist/pokerhand.min.js
+        env:
+          BASE: ${{ matrix.base }}
+        run: |
+          mkdir "$RUNNER_TEMP/cdn"
+          cd "$RUNNER_TEMP/cdn"
+          tarball="$(npm pack "$PACKAGE@$VERSION" --json | jq -r '.[0].filename')"
+          if ! tar -xzf "$tarball" package/dist/pokerhand.min.js; then
+            echo "::error::The registry tarball of $PACKAGE@$VERSION has no dist/pokerhand.min.js."
+            exit 1
+          fi
+          url="$BASE/$PACKAGE@$VERSION/dist/pokerhand.min.js"
+          echo "$url"
+          # A CDN can lag a few minutes behind npm after a release.
+          if ! curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 30 --retry-all-errors \
+            --output cdn.min.js "$url"; then
+            echo "::error::${{ matrix.cdn }} does not serve $url."
+            exit 1
+          fi
+          sha256sum package/dist/pokerhand.min.js cdn.min.js
+          if ! cmp package/dist/pokerhand.min.js cdn.min.js; then
+            echo "::error::$url differs from dist/pokerhand.min.js in the registry tarball."
+            exit 1
+          fi
+      - name: A <script> of it exposes window.PokerHand
+        run: node compat/published/script-tag.mjs "$RUNNER_TEMP/cdn/cdn.min.js"
+
+  node6:
+    name: npm 3 install (Node 6)
+    needs: resolve
+    # setup-node has Node 6 for linux-x64 only.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 6
+          package-manager-cache: false
+      - name: npm install from the registry, with npm 3
+        run: |
+          node --version
+          npm --version
+          mkdir "$RUNNER_TEMP/consumer"
+          cd "$RUNNER_TEMP/consumer"
+          echo '{ "name": "smoke-consumer", "private": true }' > package.json
+          npm install "$PACKAGE@$VERSION"
+          installed="$(node -p "require('./node_modules/$PACKAGE/package.json').version")"
+          if [[ "$installed" != "$VERSION" ]]; then
+            echo "::error::npm 3 installed $PACKAGE@$installed, not $VERSION."
+            exit 1
+          fi
+      # require.cjs only: Node 6 has no ES modules. compat (below) runs import on Node 22 to 26.
+      - name: compat/smoke/ on the installed package
+        run: |
+          cp compat/smoke/* "$RUNNER_TEMP/consumer"
+          cd "$RUNNER_TEMP/consumer"
+          node require.cjs
+
+  compat:
+    name: compat (Node ${{ matrix.node }})
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - name: npm pack the registry tarball
+        id: pack
+        run: |
+          mkdir "$RUNNER_TEMP/registry"
+          pack="$(npm pack "$PACKAGE@$VERSION" --json --pack-destination "$RUNNER_TEMP/registry")"
+          integrity="$(npm view "$PACKAGE@$VERSION" dist.integrity)"
+          if [[ "$(jq -r '.[0].integrity' <<< "$pack")" != "$integrity" ]]; then
+            echo "::error::npm pack $PACKAGE@$VERSION does not match dist.integrity on npm."
+            exit 1
+          fi
+          tarball="$RUNNER_TEMP/registry/$(jq -r '.[0].filename' <<< "$pack")"
+          echo "$tarball, $integrity"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+      - name: Self-check against 1.0.1 (must be all green)
+        run: npm run compat
+        env:
+          COMPAT_TARGET: reference
+      - name: compat/ against the registry tarball
+        run: npm run compat
+        env:
+          COMPAT_TARGET: ${{ steps.pack.outputs.tarball }}

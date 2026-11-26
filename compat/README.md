@@ -34,3 +34,12 @@ reach it the way a user would: `require()`, `import`, a `<script>` tag, or a dee
 - Expected values come from 1.0.1 or from an independent source (Cactus Kev's tables), never from the code under test.
 - Changing or removing an expectation is a contract change: it needs a decision on the
   [wayfinder map](https://github.com/codeKonami/poker-hand/issues/9) (or a v2.0.0).
+
+## After a release: `published/`
+
+`.github/workflows/verify-published.yml` checks a version as npm serves it. Run it by hand with a
+version or a dist-tag (`gh workflow run verify-published.yml -f version=next`). It checks the
+provenance, then unpkg and jsDelivr (`published/script-tag.mjs` loads their
+`dist/pokerhand.min.js` as a `<script>`), then `npm install` with Node 6's npm 3 followed by
+`smoke/require.cjs`, then this suite against the registry tarball. A copy of 1.0.1 counts as the
+reference run, because `isReferenceRun` compares tarball contents.

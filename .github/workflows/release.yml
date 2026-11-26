@@ -5,14 +5,26 @@ name: Release
 #
 # It publishes the version that package.json carries. Bump it first with changesets:
 # `npx changeset version` on a branch, review the version and CHANGELOG.md, merge.
+# A prerelease (`npx changeset pre enter next`, then version) goes out with dist-tag next:
+# `gh workflow run release.yml --ref master -f dist-tag=next`.
 #
-#   preflight  master only; version not on npm yet; tag v<version> not taken yet
+#   preflight  master only; a prerelease x.y.z-… on a dist-tag other than latest, and a final
+#              version on latest only; version not on npm yet; tag v<version> not taken yet
 #   ci         the whole of ci.yml on that commit, which builds and checks the tarball
-#   publish    npm publish of that very tarball, with provenance (trusted publishing,
-#              no token), then the annotated tag v<version>
+#   publish    npm publish of that very tarball on the dist-tag, with provenance (trusted
+#              publishing, no token), then the annotated tag v<version>
 
 on:
   workflow_dispatch:
+    inputs:
+      dist-tag:
+        description: npm dist-tag. latest for a final version x.y.z, next for a prerelease x.y.z-next.N
+        required: true
+        default: latest
+        type: choice
+        options:
+          - latest
+          - next
 
 permissions: {}
 
@@ -29,6 +41,7 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      dist-tag: ${{ steps.dist-tag.outputs.dist-tag }}
     steps:
       - name: Run from master only
         if: github.ref != 'refs/heads/master'
@@ -41,6 +54,28 @@ jobs:
       - name: Read the version
         id: version
         run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+      - name: Dist-tag fits the version
+        id: dist-tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DIST_TAG: ${{ inputs.dist-tag }}
+        run: |
+          semver='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+          if [[ ! "$VERSION" =~ $semver ]]; then
+            echo "::error::$VERSION is not a semver version."
+            exit 1
+          fi
+          prerelease="${BASH_REMATCH[1]}"
+          if [[ -n "$prerelease" && "$DIST_TAG" == latest ]]; then
+            echo "::error::$VERSION is a prerelease: publish it on next, never on latest."
+            exit 1
+          fi
+          if [[ -z "$prerelease" && "$DIST_TAG" != latest ]]; then
+            echo "::error::$VERSION is a final version: publish it on latest, not on $DIST_TAG."
+            exit 1
+          fi
+          echo "$VERSION goes to dist-tag $DIST_TAG."
+          echo "dist-tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
       - name: Version not on npm yet
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -81,6 +116,7 @@ jobs:
       id-token: write # npm trusted publishing (OIDC), which also signs the provenance
     env:
       VERSION: ${{ needs.preflight.outputs.version }}
+      DIST_TAG: ${{ needs.preflight.outputs.dist-tag }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -101,8 +137,8 @@ jobs:
           path: ${{ runner.temp }}/package
       # No npm ci and no build here: the tarball is the one ci checked, and nothing runs
       # third-party code in the job that holds the id-token.
-      - name: Publish the tarball, with provenance
-        run: npm publish "$RUNNER_TEMP/package/poker-hand-evaluator-$VERSION.tgz" --provenance --access public
+      - name: Publish the tarball on ${{ needs.preflight.outputs.dist-tag }}, with provenance
+        run: npm publish "$RUNNER_TEMP/package/poker-hand-evaluator-$VERSION.tgz" --provenance --access public --tag "$DIST_TAG"
       - name: Tag v${{ needs.preflight.outputs.version }}
         run: |
           git config user.name 'github-actions[bot]'
