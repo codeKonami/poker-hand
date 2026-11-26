@@ -11,11 +11,16 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
  * Set on PokerHand.prototype. Every copy of the package (CommonJS, ES module, UMD, another
  * install) gets the same registered symbol, so compareWith() accepts their hands where
  * `instanceof` would not (#12). The key is a promise kept across versions.
+ * 1.0.1's UMD file runs in browsers without Symbol.for: there, every copy uses a string key.
  */
-const POKER_HAND = Symbol.for('poker-hand-evaluator.PokerHand');
+const MARKER = 'poker-hand-evaluator.PokerHand';
+const POKER_HAND: symbol | string =
+  typeof Symbol === 'function' && typeof Symbol.for === 'function'
+    ? Symbol.for(MARKER)
+    : `@@${MARKER}`;
 
 function isPokerHand(value: unknown): value is PokerHand {
-  return value != null && (value as { [POKER_HAND]?: unknown })[POKER_HAND] === true;
+  return value != null && (value as Record<symbol | string, unknown>)[POKER_HAND] === true;
 }
 
 export class PokerHand {
@@ -95,4 +100,9 @@ export declare namespace PokerHand {
 
 // Runtime side: what the namespace above promises, so that `require()` can return the
 // class itself (as in 1.0.1) and still offer `const { HandRank } = require(...)`.
-Object.assign(PokerHand, { PokerHand, default: PokerHand, HandRank, CompareResult });
+// Assignments, not Object.assign(), which 1.0.1's UMD file runs without.
+const statics = PokerHand as unknown as Record<string, unknown>;
+statics.PokerHand = PokerHand;
+statics.default = PokerHand;
+statics.HandRank = HandRank;
+statics.CompareResult = CompareResult;

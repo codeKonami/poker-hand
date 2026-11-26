@@ -1,4 +1,10 @@
 [
   { "ecmaVersion": "es6", "files": "dist/index.cjs", "checkFeatures": true },
-  { "ecmaVersion": "es6", "module": true, "files": "dist/index.mjs", "checkFeatures": true }
+  { "ecmaVersion": "es6", "module": true, "files": "dist/index.mjs", "checkFeatures": true },
+  {
+    "ecmaVersion": "es5",
+    "files": "dist/pokerhand.min.js",
+    "checkFeatures": true,
+    "allowList": "Map,Set,Symbol"
+  }
 ]
