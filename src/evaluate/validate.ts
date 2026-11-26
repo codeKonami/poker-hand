@@ -4,7 +4,7 @@ import type { Rank, Suit } from '../types';
 /**
  * Check whether a two-character string is a valid card.
  */
-function isValidCard(card: unknown): boolean {
+export function isValidCard(card: unknown): boolean {
   if (!card || typeof card !== 'string' || card.length !== 2) {
     return false;
   }

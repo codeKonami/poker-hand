@@ -30,7 +30,17 @@ function findIt(key: number): number {
  * http://suffe.cool/poker/code/pokerlib.c
  */
 export function evaluateHand(hand: readonly string[]): number {
-  const cards = hand.map(cardToInt);
+  return evaluateCards(hand.map(cardToInt));
+}
+
+/**
+ * The score of five cards in the representation of cardToInt. The deprecated
+ * src/utils/eval-hand path converts its cards as 1.0.1 did, then calls this (#29).
+ *
+ * As in 1.0.1, a missing card reads as 0 (fewer than five cards throw "Impossible hand"),
+ * and cards after the fifth are ignored.
+ */
+export function evaluateCards(cards: readonly number[]): number {
   const q = (cards[0] | cards[1] | cards[2] | cards[3] | cards[4]) >> 16;
 
   // Check for flushes and straight flushes

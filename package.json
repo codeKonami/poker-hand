@@ -24,15 +24,71 @@
       }
     },
     "./dist/pokerhand.min.js": "./dist/pokerhand.min.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./package": "./package.json",
+    "./index": {
+      "import": "./dist/index.mjs",
+      "default": "./index.js"
+    },
+    "./index.js": {
+      "import": "./dist/index.mjs",
+      "default": "./index.js"
+    },
+    "./src/pokerhand": {
+      "import": "./dist/index.mjs",
+      "default": "./src/pokerhand.js"
+    },
+    "./src/pokerhand.js": {
+      "import": "./dist/index.mjs",
+      "default": "./src/pokerhand.js"
+    },
+    "./src/utils/sanitize": "./src/utils/sanitize.js",
+    "./src/utils/sanitize.js": "./src/utils/sanitize.js",
+    "./src/utils/eval-hand": "./src/utils/eval-hand.js",
+    "./src/utils/eval-hand.js": "./src/utils/eval-hand.js",
+    "./src/utils/eval-rank": "./src/utils/eval-rank.js",
+    "./src/utils/eval-rank.js": "./src/utils/eval-rank.js",
+    "./src/utils/is-valid-card": "./src/utils/is-valid-card.js",
+    "./src/utils/is-valid-card.js": "./src/utils/is-valid-card.js",
+    "./src/arrays": "./src/arrays/index.js",
+    "./src/arrays/": "./src/arrays/index.js",
+    "./src/arrays/index": "./src/arrays/index.js",
+    "./src/arrays/index.js": "./src/arrays/index.js",
+    "./src/arrays/flushes": "./src/arrays/flushes.js",
+    "./src/arrays/flushes.js": "./src/arrays/flushes.js",
+    "./src/arrays/hand-ranks": "./src/arrays/hand-ranks.js",
+    "./src/arrays/hand-ranks.js": "./src/arrays/hand-ranks.js",
+    "./src/arrays/products": "./src/arrays/products.js",
+    "./src/arrays/products.js": "./src/arrays/products.js",
+    "./src/arrays/ranks": "./src/arrays/ranks.js",
+    "./src/arrays/ranks.js": "./src/arrays/ranks.js",
+    "./src/arrays/suits": "./src/arrays/suits.js",
+    "./src/arrays/suits.js": "./src/arrays/suits.js",
+    "./src/arrays/unique5": "./src/arrays/unique5.js",
+    "./src/arrays/unique5.js": "./src/arrays/unique5.js",
+    "./src/arrays/values": "./src/arrays/values.js",
+    "./src/arrays/values.js": "./src/arrays/values.js",
+    "./example": "./example/index.js",
+    "./example/": "./example/index.js",
+    "./example/index": "./example/index.js",
+    "./example/index.js": "./example/index.js",
+    "./dist/pokerhand.min": "./dist/pokerhand.min.js",
+    "./*/": "./*/index.js"
   },
   "engines": {
     "node": ">=6"
   },
   "files": [
-    "dist"
+    "dist",
+    "index.js",
+    "src/pokerhand.js",
+    "src/utils",
+    "src/arrays",
+    "example"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./example/index.js"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsdown",
@@ -47,7 +103,7 @@
     "compat": "vitest run --config compat/vitest.config.mts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
-    "compat:attw": "attw --pack . --exclude-entrypoints ./dist/pokerhand.min.js",
+    "compat:attw": "attw --pack . --entrypoints . ./package.json",
     "compat:smoke": "node compat/smoke/run.cjs"
   },
   "repository": {
