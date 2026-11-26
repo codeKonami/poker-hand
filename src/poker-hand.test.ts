@@ -6,10 +6,35 @@ const hisPokerHand = new PokerHand('KD KC AS AH TD');
 
 describe('Constructor', () => {
   describe('Errors', () => {
-    it('Should throw if not a valid hand passed', () => {
+    it('Should throw "Incorrect hand" if not a valid hand passed', () => {
       expect(() => {
         new PokerHand('KS 2H 5C ZD WD');
-      }).toThrow();
+      }).toThrow(/^Incorrect hand$/);
+    });
+  });
+
+  describe('Instance properties', () => {
+    it('exposes hand, score and rank', () => {
+      const hand = new PokerHand('ks kh qc ah ad');
+      expect(hand.hand).toEqual(['KS', 'KH', 'QC', 'AH', 'AD']);
+      expect(hand.score).toBe(2468);
+      expect(hand.rank).toBe('TWO_PAIRS');
+    });
+
+    it('has exactly hand, score and rank as own keys, so it serializes like 1.0.1', () => {
+      const hand = new PokerHand('AC KC QC JC TC');
+      expect(Object.keys(hand)).toEqual(['hand', 'score', 'rank']);
+      expect(JSON.stringify(hand)).toBe(
+        '{"hand":["AC","KC","QC","JC","TC"],"score":1,"rank":"ROYAL_FLUSH"}',
+      );
+    });
+
+    it('reflects the new hand after update()', () => {
+      const hand = new PokerHand('KS KH QC AH AD');
+      hand.update('AC KC QC JC TC');
+      expect(hand.hand).toEqual(['AC', 'KC', 'QC', 'JC', 'TC']);
+      expect(hand.score).toBe(1);
+      expect(hand.rank).toBe('ROYAL_FLUSH');
     });
   });
 
@@ -43,9 +68,9 @@ describe('Constructor', () => {
       expect(hand.getScore()).toEqual(1);
     });
 
-    it('Should throw on invalid hand', () => {
+    it('Should throw "Incorrect hand" on invalid hand', () => {
       const hand = new PokerHand('KS KH QC AH AD');
-      expect(() => hand.update('INVALID')).toThrow();
+      expect(() => hand.update('INVALID')).toThrow(/^Incorrect hand$/);
       // Original state should be preserved after failed update
       expect(hand.getRank()).toEqual('TWO_PAIRS');
     });
@@ -62,10 +87,15 @@ describe('Constructor', () => {
 
   describe('compareWith method', () => {
     describe('Errors', () => {
-      it('Should throw if not a valid hand to compare with', () => {
+      it('Should throw "Incorrect hand to compare with" if not a PokerHand', () => {
         expect(() => {
           myPokerHand.compareWith('foo' as unknown as PokerHand);
-        }).toThrow();
+        }).toThrow(/^Incorrect hand to compare with$/);
+      });
+
+      it('Should throw "Incorrect hand" when the other PokerHand has no comparable score', () => {
+        const scoreless: PokerHand = Object.create(PokerHand.prototype);
+        expect(() => myPokerHand.compareWith(scoreless)).toThrow(/^Incorrect hand$/);
       });
     });
 
