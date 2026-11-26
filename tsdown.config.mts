@@ -72,11 +72,24 @@ export default defineConfig([
   },
   {
     ...shared,
-    // dist/index.cjs + index.d.cts: `module.exports = PokerHand` and `export = PokerHand`.
-    entry: { index: 'src/index.cjs.ts' },
+    // dist/index.cjs: `module.exports = PokerHand`.
+    // dist/deep-paths.cjs: what the CommonJS shims of 1.0.1's deep paths read (#29).
+    // Both are thin entries over one chunk, dist/poker-hand.cjs, which Node loads once: a shim
+    // gets the very tables the evaluator of dist/index.cjs reads, generated once.
+    entry: { index: 'src/index.cjs.ts', 'deep-paths': 'src/deep-paths.ts' },
     format: 'cjs',
-    // The CommonJS file opens with "use strict", like the Vite build did.
-    outputOptions: { strict: true },
+    // dist/index.d.cts only (`export = PokerHand`): the shims are untyped, as in 1.0.1.
+    dts: { ...shared.dts, entry: 'src/index.cjs.ts' },
+    // Stable file names: the shims require dist/deep-paths.cjs by name.
+    hash: false,
+    outputOptions: {
+      // The CommonJS files open with "use strict", like the Vite build did.
+      strict: true,
+      // The library code, not its declarations, which stay whole in dist/index.d.cts.
+      codeSplitting: {
+        groups: [{ name: 'poker-hand', test: (id) => /[\\/]src[\\/].*(?<!\.d)\.ts$/.test(id) }],
+      },
+    },
   },
   {
     // dist/pokerhand.min.js, at 1.0.1's path, for <script> tags (window.PokerHand), require()

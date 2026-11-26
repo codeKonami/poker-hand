@@ -24,13 +24,45 @@
       }
     },
     "./dist/pokerhand.min.js": "./dist/pokerhand.min.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./index": "./index.js",
+    "./index.js": "./index.js",
+    "./src/pokerhand": "./src/pokerhand.js",
+    "./src/pokerhand.js": "./src/pokerhand.js",
+    "./src/utils/sanitize": "./src/utils/sanitize.js",
+    "./src/utils/sanitize.js": "./src/utils/sanitize.js",
+    "./src/utils/eval-hand": "./src/utils/eval-hand.js",
+    "./src/utils/eval-hand.js": "./src/utils/eval-hand.js",
+    "./src/utils/eval-rank": "./src/utils/eval-rank.js",
+    "./src/utils/eval-rank.js": "./src/utils/eval-rank.js",
+    "./src/utils/is-valid-card": "./src/utils/is-valid-card.js",
+    "./src/utils/is-valid-card.js": "./src/utils/is-valid-card.js",
+    "./src/arrays/index": "./src/arrays/index.js",
+    "./src/arrays/index.js": "./src/arrays/index.js",
+    "./src/arrays/flushes": "./src/arrays/flushes.js",
+    "./src/arrays/flushes.js": "./src/arrays/flushes.js",
+    "./src/arrays/hand-ranks": "./src/arrays/hand-ranks.js",
+    "./src/arrays/hand-ranks.js": "./src/arrays/hand-ranks.js",
+    "./src/arrays/products": "./src/arrays/products.js",
+    "./src/arrays/products.js": "./src/arrays/products.js",
+    "./src/arrays/ranks": "./src/arrays/ranks.js",
+    "./src/arrays/ranks.js": "./src/arrays/ranks.js",
+    "./src/arrays/suits": "./src/arrays/suits.js",
+    "./src/arrays/suits.js": "./src/arrays/suits.js",
+    "./src/arrays/unique5": "./src/arrays/unique5.js",
+    "./src/arrays/unique5.js": "./src/arrays/unique5.js",
+    "./src/arrays/values": "./src/arrays/values.js",
+    "./src/arrays/values.js": "./src/arrays/values.js"
   },
   "engines": {
     "node": ">=6"
   },
   "files": [
-    "dist"
+    "dist",
+    "index.js",
+    "src/pokerhand.js",
+    "src/utils",
+    "src/arrays"
   ],
   "sideEffects": false,
   "scripts": {
