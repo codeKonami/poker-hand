@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PACKAGE, pokerHandClass, target, thrown } from './consumer';
+import { isReferenceRun, PACKAGE, pokerHandClass, target, thrown } from './consumer';
 
 describe("require('poker-hand-evaluator')", () => {
   it('returns the PokerHand class itself', () => {
@@ -7,6 +7,30 @@ describe("require('poker-hand-evaluator')", () => {
 
     expect(typeof PokerHand).toBe('function');
     expect(new PokerHand('AS KS QS JS TS').getScore()).toBe(1);
+  });
+
+  // A minifier or a bundler rename would change it (Vite's build made it one letter).
+  it('the class is named PokerHand', () => {
+    expect(pokerHandClass(target).name).toBe('PokerHand');
+  });
+
+  // Added after 1.0.1, whose entry is the class alone.
+  describe.skipIf(isReferenceRun)('named exports on the class (new in 1.1.0)', () => {
+    it('const { PokerHand, HandRank, CompareResult } = require() works', () => {
+      const { PokerHand, HandRank, CompareResult } = target.require(PACKAGE);
+
+      expect(new PokerHand('AS KS QS JS TS').getRank()).toBe(HandRank.RoyalFlush);
+      expect(HandRank.Flush).toBe('FLUSH');
+      expect([CompareResult.Win, CompareResult.Loss, CompareResult.Tie]).toEqual([1, 2, 3]);
+    });
+
+    // What TypeScript compiled to CommonJS reads for `import PokerHand from` (no esModuleInterop).
+    it('.PokerHand and .default are the class itself', () => {
+      const PokerHand = target.require(PACKAGE);
+
+      expect(PokerHand.PokerHand).toBe(PokerHand);
+      expect(PokerHand.default).toBe(PokerHand);
+    });
   });
 });
 
