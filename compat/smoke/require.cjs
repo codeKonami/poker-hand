@@ -186,7 +186,7 @@ check('compareWith() a PokerHand without a comparable score throws "Incorrect ha
 
 // Deep paths of 1.0.1, served by every 1.x (#16, #29), as in compat/deep-imports.test.ts.
 // Node < 12.7 ignores "exports" and loads the files of the package; later versions go through
-// "exports". The UMD build (dist/pokerhand.min) is #19's.
+// "exports".
 
 const crypto = require('crypto');
 
@@ -218,8 +218,10 @@ const withAndWithoutJs = (path) => [`${path}.js`, path];
     (evalHand) => {
       assert.strictEqual(evalHand(['AC', 'KC', 'QC', 'JC', 'TC']), 1);
       assert.strictEqual(evalHand(['KS', '2H', '5C', 'KD', 'AS']), 3597);
-      // The message of this TypeError depends on the JavaScript engine.
+      // An unknown rank: the engine's own TypeError, whose message depends on the engine.
       assert.strictEqual(thrown(() => evalHand(['ZS', 'KC', 'QC', 'JC', 'TC'])).type, 'TypeError');
+      // An unknown suit counts as no suit.
+      assert.strictEqual(evalHand(['AX', 'KC', 'QC', 'JC', 'TC']), 1600);
     },
   ],
   [
@@ -338,6 +340,21 @@ check("the deep-path tables are the evaluator's own: changing one changes the sc
     flushes[0x1f00] = saved;
   }
   assert.strictEqual(new PokerHand('AS KS QS JS TS').getScore(), 1);
+});
+
+// The UMD build: its own copy of the class, as in 1.0.1, whose webpack build bundled one.
+['dist/pokerhand.min.js', 'dist/pokerhand.min'].forEach((path) => {
+  check(`require('poker-hand-evaluator/${path}') is the UMD build's PokerHand class`, () => {
+    const UmdPokerHand = deep(path);
+
+    assert.strictEqual(typeof UmdPokerHand, 'function');
+    assert.strictEqual(UmdPokerHand, deep('dist/pokerhand.min.js'));
+    assert.deepStrictEqual(new UmdPokerHand('as kh qd jc ts').describe(), {
+      hand: ['AS', 'KH', 'QD', 'JC', 'TS'],
+      score: 1600,
+      rank: 'STRAIGHT',
+    });
+  });
 });
 
 ['package', 'package.json'].forEach((path) => {
