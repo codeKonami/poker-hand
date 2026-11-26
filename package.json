@@ -86,7 +86,9 @@
     "src/arrays",
     "example"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./example/index.js"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsdown",
