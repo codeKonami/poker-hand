@@ -46,8 +46,11 @@ function consumer(provided: CompatConsumer): Consumer {
 export const reference = consumer(inject('reference'));
 export const target = consumer(inject('target'));
 
-/** True when the suite runs against 1.0.1 itself (COMPAT_TARGET=reference). */
-export const isReferenceRun = target.version === reference.version;
+/**
+ * True when the suite runs against 1.0.1 itself (COMPAT_TARGET=reference).
+ * Compares tarballs, not versions: the repo stays at 1.0.1 until changesets bumps it.
+ */
+export const isReferenceRun = target.tarball === reference.tarball;
 
 /**
  * The PokerHand class of a consumer, wherever its entry point puts it.
