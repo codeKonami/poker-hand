@@ -61,6 +61,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "2.6.9",
+    "@changesets/cli": "^3.0.3",
     "@types/jsdom": "^30.0.0",
     "es-check": "^9.9.0",
     "jsdom": "^31.0.1",
