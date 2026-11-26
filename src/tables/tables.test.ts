@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { flushes, unique5 } from '.';
+import { flushes, products, unique5, values } from '.';
 import { flushes as shippedFlushes } from './fixtures/flushes';
+import { products as shippedProducts } from './fixtures/products';
 import { unique5 as shippedUnique5 } from './fixtures/unique5';
+import { values as shippedValues } from './fixtures/values';
 
 /*
  * The tables are generated at import. Each one must equal, element for element,
@@ -10,6 +12,8 @@ import { unique5 as shippedUnique5 } from './fixtures/unique5';
 describe.each([
   ['flushes', flushes, shippedFlushes],
   ['unique5', unique5, shippedUnique5],
+  ['products', products, shippedProducts],
+  ['values', values, shippedValues],
 ])('%s', (_name, table, expected) => {
   it('is a plain array, like the one 1.0.1 exported', () => {
     expect(Array.isArray(table)).toBe(true);
