@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseHand } from './validate';
 
 describe('parseHand', () => {
@@ -9,7 +9,7 @@ describe('parseHand', () => {
       }).toThrow(/^Hand must be defined$/);
     });
 
-    it("Should throw \"Hand must be defined\" if empty ('') is passed", () => {
+    it('Should throw "Hand must be defined" if empty (\'\') is passed', () => {
       expect(() => {
         parseHand('');
       }).toThrow(/^Hand must be defined$/);
@@ -27,7 +27,7 @@ describe('parseHand', () => {
       }).toThrow(/^Incorrect hand$/);
     });
 
-    it("Should throw \"Incorrect hand\" if we can't find 5 cards", () => {
+    it('Should throw "Incorrect hand" if we can\'t find 5 cards', () => {
       expect(() => {
         parseHand('KSD 2HD D5C JD');
       }).toThrow(/^Incorrect hand$/);

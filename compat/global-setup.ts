@@ -73,11 +73,7 @@ export default function setup({ provide }: TestProject) {
 
   const choice = process.env.COMPAT_TARGET;
   const targetTarball =
-    choice === 'reference'
-      ? REFERENCE_TARBALL
-      : choice
-        ? resolve(choice)
-        : packCurrent(workdir);
+    choice === 'reference' ? REFERENCE_TARBALL : choice ? resolve(choice) : packCurrent(workdir);
 
   const reference = install(REFERENCE_TARBALL, join(workdir, 'reference'));
   const target = install(targetTarball, join(workdir, 'target'));

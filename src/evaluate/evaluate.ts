@@ -1,4 +1,4 @@
-import { products, flushes, unique5, values } from '../tables';
+import { flushes, products, unique5, values } from '../tables';
 import { cardToInt } from './card';
 
 /**

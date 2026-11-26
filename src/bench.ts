@@ -35,7 +35,7 @@ for (let i = 0; i < 52; i++) {
   }
 }
 
-const end = Math.round((((performance.now() - start) / 1000) + 0.0001) * 100) / 100;
+const end = Math.round(((performance.now() - start) / 1000 + 0.0001) * 100) / 100;
 
 console.log(`Took ${end}s to evaluate the ${totalCombinations} combinations\n`);
 console.log('Here some random combinations\n');

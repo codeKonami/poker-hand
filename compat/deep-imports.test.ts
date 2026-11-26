@@ -11,8 +11,7 @@ import { type Consumer, PACKAGE, reference, target, thrown } from './consumer';
  * from both packages and observed the same way; the observations must match.
  */
 
-const digest = (value: unknown) =>
-  createHash('sha1').update(JSON.stringify(value)).digest('hex');
+const digest = (value: unknown) => createHash('sha1').update(JSON.stringify(value)).digest('hex');
 
 /** What a consumer can see of a module, small enough to diff. */
 type Observe = (exported: any, of: Consumer) => unknown;

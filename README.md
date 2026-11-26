@@ -1,5 +1,4 @@
-Poker Texas Holdem Cactus Kev's algorithm in JavaScript
-=====
+# Poker Texas Holdem Cactus Kev's algorithm in JavaScript
 
 Evaluate the score (the lower the better) of a poker hand as described in this post blog : http://suffe.cool/poker/evaluator.html.
 You can compare two poker hands to find out who wins or if it's a tie.
@@ -22,7 +21,7 @@ npm install --save poker-hand-evaluator
 const PokerHand = require('poker-hand-evaluator');
 
 const myPokerHand = new PokerHand('KS KH QC AH AD');
-const hisPokerHand = new PokerHand('KD KC AS AH TD')
+const hisPokerHand = new PokerHand('KD KC AS AH TD');
 
 console.log(myPokerHand.describe());
 // { hand: [ 'KS', 'KH', 'QC', 'AH', 'AD' ],
@@ -48,7 +47,6 @@ console.log(myPokerHand.toString());
 // KS KH QC AH AD
 console.log(hisPokerHand.toString());
 // KD KC AS AH TD
-
 
 /**
  * return 1 if it's a Win
