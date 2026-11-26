@@ -31,6 +31,30 @@ describe("import from 'poker-hand-evaluator' (ES module consumer)", () => {
     });
   });
 
+  it('the default import is named PokerHand', () => {
+    const run = target.runEsm(`
+      import PokerHand from 'poker-hand-evaluator';
+      console.log(JSON.stringify(PokerHand.name));
+    `);
+
+    expect(run).toEqual({ ok: true, value: 'PokerHand' });
+  });
+
+  // An ES module app with a CommonJS dependency that also uses the package. 1.0.1 had one
+  // CommonJS copy; a dual package loads two PokerHand classes, and compareWith() must take both.
+  it('compareWith() compares a hand from import with a hand from require()', () => {
+    const run = target.runEsm(`
+      import { createRequire } from 'node:module';
+      import PokerHand from 'poker-hand-evaluator';
+      const RequiredPokerHand = createRequire(import.meta.url)('poker-hand-evaluator');
+      const flush = new PokerHand('AC KC QC JC 9C');
+      const straight = new RequiredPokerHand('AS KH QD JC TS');
+      console.log(JSON.stringify([flush.compareWith(straight), straight.compareWith(flush)]));
+    `);
+
+    expect(run).toEqual({ ok: true, value: [1, 2] });
+  });
+
   // Added after 1.0.1, whose CommonJS entry exposes no named exports to ES modules.
   describe.skipIf(isReferenceRun)('named exports (new in 1.1.0)', () => {
     it('exports PokerHand, HandRank and CompareResult', () => {
