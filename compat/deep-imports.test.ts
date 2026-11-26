@@ -395,6 +395,20 @@ const UTIL_INPUTS: [path: string, label: string, input: unknown][] = [
 ];
 
 describe('deep-path utils on inputs they were not meant for (characterization)', () => {
+  it.each([
+    'src/utils/sanitize',
+    'src/utils/eval-hand',
+    'src/utils/eval-rank',
+    'src/utils/is-valid-card',
+  ])('%s has the name and arity of 1.0.1', (path) => {
+    const observe = (of: Consumer) => {
+      const util = of.require(`${PACKAGE}/${path}`);
+      return { type: typeof util, name: util.name, length: util.length };
+    };
+
+    expect(observe(target)).toEqual(observe(reference));
+  });
+
   it.each(UTIL_INPUTS)('%s with %s', (path, _, input) => {
     const observe = (of: Consumer) => {
       let value: unknown;
