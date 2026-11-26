@@ -46,7 +46,8 @@
     "compat": "vitest run --config compat/vitest.config.mts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
-    "compat:attw": "attw --pack ."
+    "compat:attw": "attw --pack .",
+    "compat:smoke": "node compat/smoke/run.cjs"
   },
   "repository": {
     "type": "git",
