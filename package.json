@@ -25,10 +25,22 @@
     },
     "./dist/pokerhand.min.js": "./dist/pokerhand.min.js",
     "./package.json": "./package.json",
-    "./index": "./index.js",
-    "./index.js": "./index.js",
-    "./src/pokerhand": "./src/pokerhand.js",
-    "./src/pokerhand.js": "./src/pokerhand.js",
+    "./index": {
+      "import": "./dist/index.mjs",
+      "default": "./index.js"
+    },
+    "./index.js": {
+      "import": "./dist/index.mjs",
+      "default": "./index.js"
+    },
+    "./src/pokerhand": {
+      "import": "./dist/index.mjs",
+      "default": "./src/pokerhand.js"
+    },
+    "./src/pokerhand.js": {
+      "import": "./dist/index.mjs",
+      "default": "./src/pokerhand.js"
+    },
     "./src/utils/sanitize": "./src/utils/sanitize.js",
     "./src/utils/sanitize.js": "./src/utils/sanitize.js",
     "./src/utils/eval-hand": "./src/utils/eval-hand.js",
