@@ -91,6 +91,25 @@ describe('deep imports published in 1.0.1 (characterization)', () => {
   });
 });
 
+// eval-hand takes cards that sanitize has already checked. On an invalid card 1.0.1 failed with
+// a TypeError, whose message depended on the JavaScript engine, so only the type is compared.
+// Not covered: an invalid suit (AX). 1.0.1 read it as no suit and returned a score (1600 for
+// AX KC QC JC TC); 1.1.0 throws the TypeError, as decided in #16.
+describe('src/utils/eval-hand on cards it was not meant for (characterization)', () => {
+  it.each([
+    ['an invalid rank', ['ZS', 'KC', 'QC', 'JC', 'TC']],
+    ['lowercase cards', ['as', 'kc', 'qc', 'jc', 'tc']],
+    ['four cards', ['AS', 'KS', 'QS', 'JS']],
+  ])('%s', (_, hand) => {
+    const observe = (of: Consumer) => {
+      const error = thrown(() => of.require(`${PACKAGE}/src/utils/eval-hand`)(hand));
+      return typeof error === 'object' && error.type === 'TypeError' ? error.type : error;
+    };
+
+    expect(observe(target)).toEqual(observe(reference));
+  });
+});
+
 // biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
 type Change = (table: any, of: Consumer) => () => void;
 

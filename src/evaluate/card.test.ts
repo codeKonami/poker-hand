@@ -35,10 +35,10 @@ describe('cardToInt', () => {
   });
 
   it('should throw for an invalid rank', () => {
-    expect(() => cardToInt('ZS')).toThrow('Invalid card rank');
+    expect(() => cardToInt('ZS')).toThrow(new TypeError('Invalid card rank: "Z"'));
   });
 
   it('should throw for an invalid suit', () => {
-    expect(() => cardToInt('AX')).toThrow('Invalid card suit');
+    expect(() => cardToInt('AX')).toThrow(new TypeError('Invalid card suit: "X"'));
   });
 });
