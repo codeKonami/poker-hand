@@ -101,7 +101,7 @@
     "compat": "vitest run --config compat/vitest.config.mts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
-    "compat:attw": "attw --pack . --exclude-entrypoints ./dist/pokerhand.min.js",
+    "compat:attw": "attw --pack . --entrypoints . ./package.json",
     "compat:smoke": "node compat/smoke/run.cjs"
   },
   "repository": {
