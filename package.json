@@ -10,14 +10,14 @@
     "texas holdem"
   ],
   "type": "module",
-  "main": "./dist/poker-hand-evaluator.cjs",
-  "module": "./dist/poker-hand-evaluator.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "import": "./dist/poker-hand-evaluator.js",
-      "require": "./dist/poker-hand-evaluator.cjs",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.mts"
     }
   },
   "files": [
@@ -25,10 +25,11 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsdown",
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "tsx src/bench.ts",
+    "typecheck": "tsc --noEmit",
     "compat": "vitest run --config compat/vitest.config.ts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
@@ -48,10 +49,10 @@
     "@types/jsdom": "^21.1.7",
     "jsdom": "^26.1.0",
     "publint": "^0.3.25",
+    "tsdown": "^0.23.7",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
-    "vite-plugin-dts": "^3.7.2",
     "vitest": "^1.2.2"
   }
 }
