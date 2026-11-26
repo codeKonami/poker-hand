@@ -1,6 +1,14 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { type Consumer, PACKAGE, reference, target, thrown } from './consumer';
+import {
+  type Consumer,
+  type EsmRun,
+  isReferenceRun,
+  PACKAGE,
+  reference,
+  target,
+  thrown,
+} from './consumer';
 
 /*
  * Characterization only: which of these paths stay public is decided by
@@ -80,13 +88,67 @@ function observation(of: Consumer, specifier: string, observe: Observe) {
   }
 }
 
+/**
+ * How an ES module sees a deep path, in a child `node`:
+ * - `class`: the PokerHand class, by its use and by whether it is the main entry's default
+ *   import. 1.0.1 had one class; 1.1.0 gives its ES module class to `import` (#16).
+ * - `module`: anything else, which must be the very object require() returns, under the same
+ *   export names (Node finds the names of a CommonJS module by reading its code).
+ * - `json`: package.json, which needs an import attribute.
+ */
+type ImportKind = 'class' | 'module' | 'json';
+
+const importObservations = new Map<string, EsmRun>();
+
+function importObservation(of: Consumer, specifier: string, kind: ImportKind): EsmRun {
+  const key = [of.dir, specifier, kind].join(' ');
+  const source =
+    kind === 'class'
+      ? `
+        import * as namespace from '${specifier}';
+        import main from '${PACKAGE}';
+        const value = namespace.default;
+        console.log(JSON.stringify({
+          type: typeof value,
+          describe: new value('as kh qd jc ts').describe(),
+          isMainImport: value === main,
+        }));`
+      : `
+        import { createRequire } from 'node:module';
+        import * as namespace from '${specifier}'${kind === 'json' ? " with { type: 'json' }" : ''};
+        const value = namespace.default;
+        console.log(JSON.stringify({
+          names: Object.keys(namespace),
+          isRequired: value === createRequire(import.meta.url)('${specifier}'),
+          ${kind === 'json' ? 'name: value.name,' : ''}
+        }));`;
+  if (!importObservations.has(key)) importObservations.set(key, of.runEsm(source));
+  return importObservations.get(key) as EsmRun;
+}
+
 describe('deep imports published in 1.0.1 (characterization)', () => {
   describe.each(DEEP_MODULES)('%s', (path, observe) => {
+    const kind = observe === pokerHandClass ? 'class' : 'module';
+
     it.each([`${PACKAGE}/${path}.js`, `${PACKAGE}/${path}`])('require(%s)', (specifier) => {
       const expected = observation(reference, specifier, observe);
       expect(expected.ok, 'the 1.0.1 observation itself failed').toBe(true);
 
       expect(observation(target, specifier, observe)).toEqual(expected);
+    });
+
+    it(`import(${PACKAGE}/${path}.js)`, () => {
+      const expected = importObservation(reference, `${PACKAGE}/${path}.js`, kind);
+      expect(expected.ok, 'the 1.0.1 observation itself failed').toBe(true);
+
+      expect(importObservation(target, `${PACKAGE}/${path}.js`, kind)).toEqual(expected);
+    });
+
+    // 1.0.1 had no "exports", and import, unlike require(), needed the file extension.
+    it.skipIf(isReferenceRun)(`import(${PACKAGE}/${path}) (new in 1.1.0)`, () => {
+      expect(importObservation(target, `${PACKAGE}/${path}`, kind)).toEqual(
+        importObservation(reference, `${PACKAGE}/${path}.js`, kind),
+      );
     });
   });
 });
