@@ -1,4 +1,4 @@
-import { classKeys, productOf } from './repeated-ranks';
+import { handClasses } from './repeated-ranks';
 
 /**
  * Prime products of the 4,888 hand classes with a repeated rank, in increasing
@@ -6,4 +6,6 @@ import { classKeys, productOf } from './repeated-ranks';
  *
  * Generated at import.
  */
-export const products: readonly number[] = /* @__PURE__ */ classKeys.map(productOf);
+export const products: readonly number[] = /* @__PURE__ */ handClasses.map(
+  (handClass) => handClass[0],
+);

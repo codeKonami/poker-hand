@@ -1,4 +1,4 @@
-import { classKeys, scoreOf } from './repeated-ranks';
+import { handClasses } from './repeated-ranks';
 
 /**
  * Scores of the 4,888 hand classes with a repeated rank: `values[i]` is the score
@@ -6,4 +6,6 @@ import { classKeys, scoreOf } from './repeated-ranks';
  *
  * Generated at import.
  */
-export const values: readonly number[] = /* @__PURE__ */ classKeys.map(scoreOf);
+export const values: readonly number[] = /* @__PURE__ */ handClasses.map(
+  (handClass) => handClass[1],
+);
