@@ -252,6 +252,83 @@ describe('other forms of the deep paths (characterization)', () => {
   );
 });
 
+// Every deep path, in every form (all forms of a module, the other forms, the UMD build).
+const ALL_FORMS = [
+  ...DEEP_MODULES.flatMap(([path]) => [path, `${path}.js`]),
+  ...OTHER_IMPORTS.map(([path]) => path),
+  ...EXAMPLES,
+];
+const TRAILING_SLASH = ALL_FORMS.filter((path) => path.endsWith('/'));
+const WITHOUT_TRAILING_SLASH = ALL_FORMS.filter((path) => !path.endsWith('/'));
+
+/**
+ * Loads each path in a child node and returns what it wrote to stderr. A path that fails to
+ * load is skipped: the tests above check it. With `throwDeprecation`, a deprecation warning
+ * ends the process, as with --throw-deprecation.
+ */
+function loadAll(
+  of: Consumer,
+  paths: string[],
+  system: 'require' | 'import',
+  throwDeprecation: boolean,
+) {
+  const specifiers = JSON.stringify(paths.map((path) => `${PACKAGE}/${path}`));
+  const { status, stderr } =
+    system === 'require'
+      ? of.runScript(
+          `process.throwDeprecation = ${throwDeprecation};
+          for (const specifier of ${specifiers}) {
+            try { require(specifier); } catch {}
+          }`,
+          '.cjs',
+        )
+      : of.runScript(
+          `process.throwDeprecation = ${throwDeprecation};
+          for (const specifier of ${specifiers}) {
+            const options = /package/.test(specifier) ? { with: { type: 'json' } } : undefined;
+            try { await import(specifier, options); } catch {}
+          }`,
+          '.mjs',
+        );
+  return { status, stderr };
+}
+
+// The deprecation of the deep paths is documented only (#16). A runtime warning would end a
+// process run with --throw-deprecation, and no try/catch around require() could stop it.
+describe('runtime warnings of the deep paths', () => {
+  it.each(['require', 'import'] as const)(
+    '%s of any deep path warns nothing, even under --throw-deprecation',
+    (system) => {
+      expect(loadAll(reference, WITHOUT_TRAILING_SLASH, system, true)).toEqual({
+        status: 0,
+        stderr: '',
+      });
+      expect(loadAll(target, WITHOUT_TRAILING_SLASH, system, true)).toEqual({
+        status: 0,
+        stderr: '',
+      });
+    },
+  );
+
+  // 1.1.0 serves a trailing slash through a "./*/" pattern, and Node itself warns about that:
+  // DEP0155 from Node 17 (and DEP0148 on Node 16, through the exact keys of package.json).
+  it.each(['require', 'import'] as const)(
+    "%s with a trailing slash gets nothing but Node's own DEP0155",
+    (system) => {
+      const otherOutput = (of: Consumer) =>
+        loadAll(of, TRAILING_SLASH, system, false)
+          .stderr.split('\n')
+          .filter(
+            (line) =>
+              line && !/\[DEP0155\] DeprecationWarning/.test(line) && !/--trace-/.test(line),
+          );
+
+      expect(otherOutput(reference)).toEqual([]);
+      expect(otherOutput(target)).toEqual([]);
+    },
+  );
+});
+
 // eval-hand takes cards that sanitize has already checked. On an invalid card 1.0.1 failed with
 // a TypeError, whose message depended on the JavaScript engine, so only the type is compared.
 // Not covered: an invalid suit (AX). 1.0.1 read it as no suit and returned a score (1600 for
