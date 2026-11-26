@@ -31,6 +31,7 @@
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "scripts": {
     "dev": "vite",
     "build": "tsdown",
