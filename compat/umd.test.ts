@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 import { isReferenceRun, PACKAGE, pokerHandClass, target } from './consumer';
@@ -65,6 +66,13 @@ function page(before?: string) {
   };
 }
 
+/** Runs the UMD file in a bare context that only has `globals`: neither a browser nor Node. */
+function host(globals: Record<string, unknown>): Record<string, unknown> {
+  const context = { ...globals };
+  runInNewContext(readFileSync(target.packageFile(UMD), 'utf8'), context);
+  return context;
+}
+
 describe(`UMD build ${UMD}`, () => {
   it('is published', () => {
     expect(existsSync(target.packageFile(UMD))).toBe(true);
@@ -120,6 +128,67 @@ describe(`UMD build ${UMD}`, () => {
 
     expect(typeof PokerHand).toBe('function');
     expect(new PokerHand('AS KS QS JS TS').getScore()).toBe(1);
+  });
+
+  // The four branches of 1.0.1's webpack wrapper, in order: module.exports, AMD define(),
+  // exports.PokerHand, then the global.
+  it('a CommonJS host with exports but no module gets exports.PokerHand', () => {
+    // biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
+    const exports: { PokerHand?: any } = {};
+    const context = host({ exports });
+
+    expect(typeof exports.PokerHand).toBe('function');
+    expect(new exports.PokerHand('AS KS QS JS TS').getScore()).toBe(1);
+    expect('PokerHand' in context).toBe(false);
+  });
+
+  it('an AMD loader gets the factory through define([], factory)', () => {
+    const calls: unknown[][] = [];
+    const define = (...args: unknown[]) => {
+      calls.push(args);
+    };
+    define.amd = {};
+    const context = host({ define });
+
+    expect(calls).toHaveLength(1);
+    const [dependencies, factory] = calls[0];
+    // biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
+    const PokerHand = (factory as () => any)();
+    expect(Array.from(dependencies as unknown[])).toEqual([]);
+    expect(new PokerHand('AS KS QS JS TS').getScore()).toBe(1);
+    expect('PokerHand' in context).toBe(false);
+  });
+
+  // Node's ES module loader finds named exports in a CommonJS file by reading its source:
+  // in 1.0.1's wrapper, it finds `exports.PokerHand =`, so the named import links. Its value
+  // is read from module.exports, the class, which has no PokerHand property in 1.0.1.
+  describe('import from an ES module', () => {
+    const importBoth = () =>
+      target.runEsm(`
+        import D, { PokerHand } from '${PACKAGE}/${UMD}';
+        console.log(JSON.stringify({
+          default: typeof D,
+          score: new D('AS KS QS JS TS').getScore(),
+          named: typeof PokerHand,
+          same: PokerHand === D,
+        }));
+      `);
+
+    it(`import D, { PokerHand } from '${PACKAGE}/${UMD}' links, and D is the class`, () => {
+      expect(importBoth()).toMatchObject({ ok: true, value: { default: 'function', score: 1 } });
+    });
+
+    it.runIf(isReferenceRun)('the named PokerHand is undefined in 1.0.1', () => {
+      expect(importBoth()).toMatchObject({ ok: true, value: { named: 'undefined' } });
+    });
+
+    // Like `const { PokerHand } = require('poker-hand-evaluator')`, which also went from
+    // undefined to the class (#28).
+    describe.skipIf(isReferenceRun)('named export (new in 1.1.0)', () => {
+      it('the named PokerHand is the class', () => {
+        expect(importBoth()).toMatchObject({ ok: true, value: { same: true } });
+      });
+    });
   });
 
   // 1.0.1 checks `instanceof`, and its UMD file holds a second copy of the class, so it
