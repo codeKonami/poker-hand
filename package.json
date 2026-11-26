@@ -30,6 +30,9 @@
     "test:watch": "vitest",
     "bench": "tsx src/bench.ts",
     "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
     "compat": "vitest run --config compat/vitest.config.ts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
@@ -46,6 +49,7 @@
   "license": "MIT",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "2.6.9",
     "@types/jsdom": "^30.0.0",
     "jsdom": "^31.0.1",
     "publint": "^0.3.25",
