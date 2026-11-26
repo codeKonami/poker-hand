@@ -14,28 +14,26 @@ function* everyFiveCardHand() {
             yield `${DECK[a]} ${DECK[b]} ${DECK[c]} ${DECK[d]} ${DECK[e]}`;
 }
 
-it(
-  'scores and ranks all 2,598,960 five-card hands exactly like 1.0.1',
-  () => {
-    const Reference = pokerHandClass(reference);
-    const Target = pokerHandClass(target);
-    let count = 0;
-    const mismatches: string[] = [];
+it('scores and ranks all 2,598,960 five-card hands exactly like 1.0.1', {
+  timeout: 300_000,
+}, () => {
+  const Reference = pokerHandClass(reference);
+  const Target = pokerHandClass(target);
+  let count = 0;
+  const mismatches: string[] = [];
 
-    for (const hand of everyFiveCardHand()) {
-      count++;
-      const expected = new Reference(hand);
-      const actual = new Target(hand);
-      if (actual.getScore() !== expected.getScore() || actual.getRank() !== expected.getRank()) {
-        mismatches.push(
-          `${hand}: ${actual.getScore()} ${actual.getRank()}, expected ${expected.getScore()} ${expected.getRank()}`,
-        );
-        if (mismatches.length === 20) break;
-      }
+  for (const hand of everyFiveCardHand()) {
+    count++;
+    const expected = new Reference(hand);
+    const actual = new Target(hand);
+    if (actual.getScore() !== expected.getScore() || actual.getRank() !== expected.getRank()) {
+      mismatches.push(
+        `${hand}: ${actual.getScore()} ${actual.getRank()}, expected ${expected.getScore()} ${expected.getRank()}`,
+      );
+      if (mismatches.length === 20) break;
     }
+  }
 
-    expect(mismatches).toEqual([]);
-    expect(count).toBe(2_598_960);
-  },
-  { timeout: 300_000 },
-);
+  expect(mismatches).toEqual([]);
+  expect(count).toBe(2_598_960);
+});

@@ -8,21 +8,21 @@ reach it the way a user would: `require()`, `import`, a `<script>` tag, or a dee
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `npm run compat` | builds, `npm pack`s this repo and runs the suite against that tarball |
-| `COMPAT_TARGET=reference npm run compat` | runs the suite against 1.0.1 itself: **must be all green** (tests added after 1.0.1 are skipped) |
-| `COMPAT_TARGET=path/to/x.tgz npm run compat` | runs the suite against any tarball |
-| `npm run compat:lint` | builds, then `publint --strict` and `attw --pack .` (also `compat:publint`, `compat:attw`) |
+| Command                                      | What it does                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `npm run compat`                             | builds, `npm pack`s this repo and runs the suite against that tarball                            |
+| `COMPAT_TARGET=reference npm run compat`     | runs the suite against 1.0.1 itself: **must be all green** (tests added after 1.0.1 are skipped) |
+| `COMPAT_TARGET=path/to/x.tgz npm run compat` | runs the suite against any tarball                                                               |
+| `npm run compat:lint`                        | builds, then `publint --strict` and `attw --pack .` (also `compat:publint`, `compat:attw`)       |
 
 ## Files
 
-| File | Seam | Catches |
-|---|---|---|
-| `require-api.test.ts` | `require('poker-hand-evaluator')` | entry point, `hand`/`score`/`rank` properties, methods, sample scores, exact error messages |
-| `esm-import.test.ts` | `import` from an ES module (child `node`) | default import; named exports (new in 1.1.0) |
-| `exhaustive.test.ts` | both packages side by side | any score or rank drift over the 2,598,960 five-card hands |
-| `umd.test.ts` | `dist/pokerhand.min.js` | `window.PokerHand` from a `<script>` (jsdom), `require()` of the file |
+| File                   | Seam                                      | Catches                                                                                                                                                                                 |
+| ---------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `require-api.test.ts`  | `require('poker-hand-evaluator')`         | entry point, `hand`/`score`/`rank` properties, methods, sample scores, exact error messages                                                                                             |
+| `esm-import.test.ts`   | `import` from an ES module (child `node`) | default import; named exports (new in 1.1.0)                                                                                                                                            |
+| `exhaustive.test.ts`   | both packages side by side                | any score or rank drift over the 2,598,960 five-card hands                                                                                                                              |
+| `umd.test.ts`          | `dist/pokerhand.min.js`                   | `window.PokerHand` from a `<script>` (jsdom), `require()` of the file                                                                                                                   |
 | `deep-imports.test.ts` | `require('poker-hand-evaluator/src/...')` | 1.0.1's deep paths, compared with what 1.0.1 exports; characterization only, the decision belongs to [Imports profonds de la 1.0.1](https://github.com/codeKonami/poker-hand/issues/16) |
 
 ## Rules

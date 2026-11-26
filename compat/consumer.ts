@@ -9,6 +9,7 @@ export const PACKAGE = 'poker-hand-evaluator';
 
 export interface Consumer extends CompatConsumer {
   /** Node's real `require`, resolving from the consumer project, as a CommonJS user would. */
+  // biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
   require: (specifier: string) => any;
   /** Path of a file inside the installed package. */
   packageFile: (path: string) => string;
@@ -19,7 +20,7 @@ export interface Consumer extends CompatConsumer {
   runEsm: (source: string) => EsmRun;
 }
 
-export type EsmRun = { ok: true; value: any } | { ok: false; error: string };
+export type EsmRun = { ok: true; value: unknown } | { ok: false; error: string };
 
 let probeCount = 0;
 
@@ -53,6 +54,7 @@ export const isReferenceRun = target.version === reference.version;
  * Tests of the class itself use this so that a broken `require()` (asserted on its own)
  * doesn't hide every other regression behind "is not a constructor".
  */
+// biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
 export function pokerHandClass(of: Consumer): any {
   const entry = of.require(PACKAGE);
   return typeof entry === 'function' ? entry : entry.PokerHand;
@@ -63,8 +65,8 @@ export function thrown(fn: () => unknown): { type: string; message: string } | '
   try {
     fn();
   } catch (error) {
-    const { constructor, message } = error as Error;
-    return { type: constructor.name, message };
+    const { constructor: errorClass, message } = error as Error;
+    return { type: errorClass.name, message };
   }
   return 'no error';
 }

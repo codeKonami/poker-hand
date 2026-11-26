@@ -1,7 +1,7 @@
-import { parseHand } from './evaluate/validate';
 import { evaluateHand } from './evaluate/evaluate';
 import { scoreToRank } from './evaluate/rank';
-import { HandRank, CompareResult } from './types';
+import { parseHand } from './evaluate/validate';
+import { CompareResult, type HandRank } from './types';
 
 /** Lets update() reassign the fields that are read-only for consumers. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };

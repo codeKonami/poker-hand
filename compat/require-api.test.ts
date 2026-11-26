@@ -129,7 +129,11 @@ describe('PokerHand errors', () => {
     ['14 characters that are not 5 cards', 'ASKSQSJSTS 9S8', 'Incorrect hand'],
     ['the same card twice', 'AS AS QS JS TS', 'Hand has duplicates'],
     ['the same card twice in different cases', 'as AS QS JS TS', 'Hand has duplicates'],
-    ['duplicated invalid cards (duplicates are checked first)', 'ZZ ZZ QS JS TS', 'Hand has duplicates'],
+    [
+      'duplicated invalid cards (duplicates are checked first)',
+      'ZZ ZZ QS JS TS',
+      'Hand has duplicates',
+    ],
     ['an invalid rank', 'AS KS QS JS 1S', 'Incorrect hand'],
     ['an invalid suit', 'AS KS QS JS TX', 'Incorrect hand'],
   ])('new PokerHand(%s) throws', (_, hand, message) => {

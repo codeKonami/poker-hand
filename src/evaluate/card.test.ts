@@ -1,17 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { cardToInt } from './card';
 
 describe('cardToInt', () => {
   it('should encode the prime number in the lowest 8 bits', () => {
     expect(cardToInt('AS') & 0xff).toBe(41); // Ace prime = 41
     expect(cardToInt('KH') & 0xff).toBe(37); // King prime = 37
-    expect(cardToInt('2C') & 0xff).toBe(2);  // Two prime = 2
+    expect(cardToInt('2C') & 0xff).toBe(2); // Two prime = 2
   });
 
   it('should encode the rank order in bits 8-11', () => {
-    expect((cardToInt('2C') >> 8) & 0xf).toBe(0);  // Two = order 0
-    expect((cardToInt('AC') >> 8) & 0xf).toBe(12);  // Ace = order 12
-    expect((cardToInt('TD') >> 8) & 0xf).toBe(8);   // Ten = order 8
+    expect((cardToInt('2C') >> 8) & 0xf).toBe(0); // Two = order 0
+    expect((cardToInt('AC') >> 8) & 0xf).toBe(12); // Ace = order 12
+    expect((cardToInt('TD') >> 8) & 0xf).toBe(8); // Ten = order 8
   });
 
   it('should encode the suit in bits 12-15', () => {
