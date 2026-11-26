@@ -1,6 +1,5 @@
 import { minify, transform } from '@swc/core';
-import type { Plugin } from 'rolldown';
-import { defineConfig, type UserConfig } from 'tsdown';
+import { defineConfig, type Rolldown, type UserConfig } from 'tsdown';
 
 const shared: UserConfig = {
   // Node builds are ES2015, like 1.0.1's main (#15); es-check verifies it.
@@ -15,7 +14,7 @@ const shared: UserConfig = {
  * It runs in generateBundle, after the Oxc minifier, which would otherwise put template
  * literals back. es-check verifies the result.
  */
-function es5(): Plugin {
+function es5(): Rolldown.Plugin {
   return {
     name: 'es5',
     async generateBundle(_options, bundle) {
@@ -33,7 +32,8 @@ function es5(): Plugin {
           },
         });
         // SWC declares its helpers (_class_call_check...) at the top of the script.
-        // A function scope keeps them off window, which only gets PokerHand.
+        // A function scope keeps them off window, which only gets PokerHand. It also keeps
+        // Rolldown's top "use strict" from reaching scripts concatenated after this one.
         const { code } = await minify(`(function(){${lowered.code}}).call(this);`, {
           ecma: 5,
           compress: true,
@@ -73,7 +73,7 @@ export default defineConfig([
     minify: true,
     plugins: [es5()],
     // A .js file: the package is "type": "commonjs", so require() reads it as CommonJS.
-    // "use strict" inside the factory, as in each module of 1.0.1's webpack build.
+    // Strict mode, as in each module of 1.0.1's webpack build.
     outputOptions: { entryFileNames: '[name].min.js', strict: true },
   },
 ]);
