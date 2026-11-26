@@ -60,7 +60,7 @@ jobs:
           overwrite: true
 
   es-check:
-    name: es-check (Node builds are ES2015)
+    name: es-check (Node builds ES2015, UMD ES5)
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
