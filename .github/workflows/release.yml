@@ -1,0 +1,111 @@
+name: Release
+
+# Publishes poker-hand-evaluator to npm. Nothing triggers it but the maintainer, by hand:
+#   Actions > Release > Run workflow, on master; or `gh workflow run release.yml --ref master`.
+#
+# It publishes the version that package.json carries. Bump it first with changesets:
+# `npx changeset version` on a branch, review the version and CHANGELOG.md, merge.
+#
+#   preflight  master only; version not on npm yet; tag v<version> not taken yet
+#   ci         the whole of ci.yml on that commit, which builds and checks the tarball
+#   publish    npm publish of that very tarball, with provenance (trusted publishing,
+#              no token), then the annotated tag v<version>
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Run from master only
+        if: github.ref != 'refs/heads/master'
+        run: |
+          echo "::error::Releases run from master, not from $GITHUB_REF."
+          exit 1
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Read the version
+        id: version
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+      - name: Version not on npm yet
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          versions="$(npm view poker-hand-evaluator versions --json)"
+          if jq -e --arg v "$VERSION" 'index($v) != null' <<< "$versions" > /dev/null; then
+            echo "::error::poker-hand-evaluator@$VERSION is already on npm. Run npx changeset version and merge it first."
+            exit 1
+          fi
+      - name: Tag not taken yet
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "::error::Tag v$VERSION already exists."
+            exit 1
+          fi
+
+  ci:
+    name: CI
+    needs: preflight
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: Publish to npm
+    needs: [preflight, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Add required reviewers to this environment for a second approval, and name it in
+    # the npm trusted publisher to bind publishing to it.
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/poker-hand-evaluator/v/${{ needs.preflight.outputs.version }}
+    permissions:
+      contents: write # push the tag
+      id-token: write # npm trusted publishing (OIDC), which also signs the provenance
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: npm 11.5.1 or later (trusted publishing)
+        run: |
+          npm --version
+          node -e "
+            const [major, minor, patch] = process.argv[1].split('.').map(Number);
+            process.exit(major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1))) ? 0 : 1);
+          " "$(npm --version)"
+      - uses: actions/download-artifact@v8
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
+      # No npm ci and no build here: the tarball is the one ci checked, and nothing runs
+      # third-party code in the job that holds the id-token.
+      - name: Publish the tarball, with provenance
+        run: npm publish "$RUNNER_TEMP/package/poker-hand-evaluator-$VERSION.tgz" --provenance --access public
+      - name: Tag v${{ needs.preflight.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "v$VERSION" -m "poker-hand-evaluator $VERSION"
+          git push origin "v$VERSION"
