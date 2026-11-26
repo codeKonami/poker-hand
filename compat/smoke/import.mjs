@@ -2,6 +2,7 @@
 // Expected values come from 1.0.1, as in compat/esm-import.test.ts.
 
 import assert from 'assert';
+import { createRequire } from 'module';
 import * as pkg from 'poker-hand-evaluator';
 // A default import: named imports from a CommonJS file need Node 12.20 or 14.13.
 import harness from './harness.cjs';
@@ -43,4 +44,40 @@ check('errors keep the 1.0.1 messages', () => {
   );
 });
 
-harness.done();
+// Deep paths of 1.0.1, with their .js, the form import resolved in 1.0.1 (#16, #29). import()
+// rather than static imports, so that a path that fails fails its own check only. It is not
+// ES2015, but every Node that runs this file has it; top-level await would need Node 14.8.
+
+const require = createRequire(import.meta.url);
+const DEEP_PATHS = [
+  'index.js',
+  'src/pokerhand.js',
+  'src/arrays/flushes.js',
+  'src/utils/eval-hand.js',
+];
+
+Promise.all(
+  DEEP_PATHS.map((path) => import(`poker-hand-evaluator/${path}`).catch((error) => ({ error })))
+)
+  .then(([indexJs, pokerhandJs, flushes, evalHand]) => {
+    [
+      ['index.js', indexJs],
+      ['src/pokerhand.js', pokerhandJs],
+    ].forEach(([path, namespace]) => {
+      check(`import from 'poker-hand-evaluator/${path}' is the class of the main entry`, () => {
+        assert.strictEqual(namespace.error, undefined);
+        assert.strictEqual(namespace.default, pkg.default);
+      });
+    });
+
+    check("import from 'poker-hand-evaluator/src/arrays/flushes.js' is require()'s array", () => {
+      assert.strictEqual(flushes.error, undefined);
+      assert.strictEqual(flushes.default, require('poker-hand-evaluator/src/arrays/flushes.js'));
+    });
+
+    check("import from 'poker-hand-evaluator/src/utils/eval-hand.js' scores hands", () => {
+      assert.strictEqual(evalHand.error, undefined);
+      assert.strictEqual(evalHand.default(['AC', 'KC', 'QC', 'JC', 'TC']), 1);
+    });
+  })
+  .then(harness.done);

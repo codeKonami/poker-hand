@@ -184,4 +184,198 @@ check('compareWith() a PokerHand without a comparable score throws "Incorrect ha
   );
 });
 
+// Deep paths of 1.0.1, served by every 1.x (#16, #29), as in compat/deep-imports.test.ts.
+// Node < 12.7 ignores "exports" and loads the files of the package; later versions go through
+// "exports". The UMD build (dist/pokerhand.min) is #19's.
+
+const crypto = require('crypto');
+
+const deep = (path) => require(`poker-hand-evaluator/${path}`);
+const digest = (value) => crypto.createHash('sha1').update(JSON.stringify(value)).digest('hex');
+const withAndWithoutJs = (path) => [`${path}.js`, path];
+
+['index', 'src/pokerhand'].forEach((module) => {
+  withAndWithoutJs(module).forEach((path) => {
+    check(`require('poker-hand-evaluator/${path}') is the class of the main entry`, () => {
+      assert.strictEqual(deep(path), entry);
+    });
+  });
+});
+
+[
+  [
+    'src/utils/sanitize',
+    (sanitize) => {
+      assert.deepStrictEqual(sanitize('JH QD 8S 5c 6d'), ['JH', 'QD', '8S', '5C', '6D']);
+      assert.deepStrictEqual(
+        thrown(() => sanitize('KS 2H 5C JD JD')),
+        error('Hand has duplicates')
+      );
+    },
+  ],
+  [
+    'src/utils/eval-hand',
+    (evalHand) => {
+      assert.strictEqual(evalHand(['AC', 'KC', 'QC', 'JC', 'TC']), 1);
+      assert.strictEqual(evalHand(['KS', '2H', '5C', 'KD', 'AS']), 3597);
+      // The message of this TypeError depends on the JavaScript engine.
+      assert.strictEqual(thrown(() => evalHand(['ZS', 'KC', 'QC', 'JC', 'TC'])).type, 'TypeError');
+    },
+  ],
+  [
+    'src/utils/eval-rank',
+    (evalRank) => {
+      assert.deepStrictEqual([1, 2, 11, 167, 323, 1600, 1610, 2468, 3326, 6186].map(evalRank), [
+        'ROYAL_FLUSH',
+        'STRAIGHT_FLUSH',
+        'FOUR_OF_A_KIND',
+        'FULL_HOUSE',
+        'FLUSH',
+        'STRAIGHT',
+        'THREE_OF_A_KIND',
+        'TWO_PAIRS',
+        'ONE_PAIR',
+        'HIGH_CARD',
+      ]);
+    },
+  ],
+  [
+    'src/utils/is-valid-card',
+    (isValidCard) => {
+      assert.deepStrictEqual(
+        ['KH', 'kh', 'zm', 'AZZ', '', 2, undefined].map((card) => isValidCard(card)),
+        [true, true, false, false, false, false, false]
+      );
+    },
+  ],
+  // 1.0.1's tables: length and sha1 of their JSON (of their entries, for a Map).
+  [
+    'src/arrays/flushes',
+    (flushes) => {
+      assert.strictEqual(flushes.length, 7937);
+      assert.strictEqual(digest(flushes), '0fec3bb7ae68328a12f5fa6783a7df81564127b7');
+    },
+  ],
+  [
+    'src/arrays/unique5',
+    (unique5) => {
+      assert.strictEqual(unique5.length, 7937);
+      assert.strictEqual(digest(unique5), '317f49dd0ec6e777786c2315ac61f1d1d8fd4674');
+    },
+  ],
+  [
+    'src/arrays/products',
+    (products) => {
+      assert.strictEqual(products.length, 4888);
+      assert.strictEqual(digest(products), 'eedfcdd732c01039632c41f9665ade3ac0dcefcb');
+    },
+  ],
+  [
+    'src/arrays/values',
+    (values) => {
+      assert.strictEqual(values.length, 4888);
+      assert.strictEqual(digest(values), '7b3a7bb1cdaaf278be30fe5260e758ea5cbe1597');
+    },
+  ],
+  [
+    'src/arrays/ranks',
+    (ranks) => {
+      assert.strictEqual(ranks.size, 13);
+      assert.strictEqual(digest(Array.from(ranks)), 'cbf34adb7a6ec9737414cb7d4125475412cf8544');
+    },
+  ],
+  [
+    'src/arrays/suits',
+    (suits) => {
+      assert.strictEqual(suits.size, 4);
+      assert.strictEqual(digest(Array.from(suits)), '9c5ef9726ff9a2dd35411f2196a62ff717b821f3');
+    },
+  ],
+  [
+    'src/arrays/hand-ranks',
+    (handRanks) => {
+      assert.deepStrictEqual(handRanks, {});
+    },
+  ],
+  [
+    'src/arrays/index',
+    (arrays) => {
+      assert.deepStrictEqual(Object.keys(arrays), [
+        'flushes',
+        'products',
+        'ranks',
+        'suits',
+        'unique5',
+        'values',
+      ]);
+      Object.keys(arrays).forEach((name) => {
+        assert.strictEqual(arrays[name], deep(`src/arrays/${name}`), name);
+      });
+    },
+  ],
+].forEach(([module, verify]) => {
+  withAndWithoutJs(module).forEach((path) => {
+    check(`require('poker-hand-evaluator/${path}') works as in 1.0.1`, () => {
+      verify(deep(path));
+    });
+  });
+});
+
+// Node 17+ prints its own DEP0155 for the trailing slash (DEP0148 on Node 16): see #29.
+['src/arrays', 'src/arrays/'].forEach((path) => {
+  check(`require('poker-hand-evaluator/${path}') is src/arrays/index.js`, () => {
+    assert.strictEqual(deep(path), deep('src/arrays/index.js'));
+  });
+});
+
+check("the deep-path tables are the evaluator's own: changing one changes the scores", () => {
+  const flushes = deep('src/arrays/flushes');
+  const saved = flushes[0x1f00];
+  flushes[0x1f00] = 9999;
+  try {
+    assert.strictEqual(new PokerHand('AS KS QS JS TS').getScore(), 9999);
+  } finally {
+    flushes[0x1f00] = saved;
+  }
+  assert.strictEqual(new PokerHand('AS KS QS JS TS').getScore(), 1);
+});
+
+['package', 'package.json'].forEach((path) => {
+  check(`require('poker-hand-evaluator/${path}') is the package.json`, () => {
+    assert.strictEqual(deep(path).name, 'poker-hand-evaluator');
+    assert.strictEqual(deep(path), deep('package.json'));
+  });
+});
+
+check('the four forms of example are one module, which logs what it logged in 1.0.1', () => {
+  const logs = [];
+  const log = console.log;
+  console.log = (...args) => {
+    logs.push(args);
+  };
+  let exported;
+  try {
+    exported = ['example', 'example/', 'example/index', 'example/index.js'].map(deep);
+  } finally {
+    console.log = log;
+  }
+
+  assert.deepStrictEqual(exported, [{}, {}, {}, {}]);
+  assert.strictEqual(exported[1], exported[0]);
+  assert.strictEqual(
+    JSON.stringify(logs),
+    JSON.stringify([
+      [{ hand: ['KS', 'KH', 'QC', 'AH', 'AD'], score: 2468, rank: 'TWO_PAIRS' }],
+      [{ hand: ['KD', 'KC', 'AS', 'AH', 'TD'], score: 2470, rank: 'TWO_PAIRS' }],
+      ['TWO_PAIRS'],
+      ['TWO_PAIRS'],
+      [2468],
+      [2470],
+      ['KS KH QC AH AD'],
+      ['KD KC AS AH TD'],
+      [1],
+    ])
+  );
+});
+
 harness.done();
