@@ -7,6 +7,17 @@ import { CompareResult, HandRank } from './types';
 /** Lets update() reassign the fields that are read-only for consumers. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
+/**
+ * Set on PokerHand.prototype. Every copy of the package (CommonJS, ES module, UMD, another
+ * install) gets the same registered symbol, so compareWith() accepts their hands where
+ * `instanceof` would not (#12). The key is a promise kept across versions.
+ */
+const POKER_HAND = Symbol.for('poker-hand-evaluator.PokerHand');
+
+function isPokerHand(value: unknown): value is PokerHand {
+  return value != null && (value as { [POKER_HAND]?: unknown })[POKER_HAND] === true;
+}
+
 export class PokerHand {
   // Plain own data properties, declared and assigned in this order, so that
   // Object.keys() and JSON.stringify() of an instance match 1.0.1.
@@ -51,7 +62,7 @@ export class PokerHand {
   }
 
   compareWith(hand: PokerHand): CompareResult {
-    if (!(hand instanceof PokerHand)) {
+    if (!isPokerHand(hand)) {
       throw new Error('Incorrect hand to compare with');
     }
 
@@ -71,6 +82,9 @@ export class PokerHand {
     throw new Error('Incorrect hand');
   }
 }
+
+// On the prototype and not enumerable: instances keep hand, score and rank as their only keys.
+Object.defineProperty(PokerHand.prototype, POKER_HAND, { value: true });
 
 // Types side: the named exports are also members of the class. This is what lets
 // index.d.cts end with `export = PokerHand` and still carry HandRank, Card, etc.
