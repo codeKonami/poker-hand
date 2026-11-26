@@ -1,7 +1,8 @@
 import { evaluateHand } from './evaluate/evaluate';
 import { scoreToRank } from './evaluate/rank';
 import { parseHand } from './evaluate/validate';
-import { CompareResult, type HandRank } from './types';
+import type { Card, Rank, Suit } from './types';
+import { CompareResult, HandRank } from './types';
 
 /** Lets update() reassign the fields that are read-only for consumers. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -70,3 +71,14 @@ export class PokerHand {
     throw new Error('Incorrect hand');
   }
 }
+
+// Types side: the named exports are also members of the class. This is what lets
+// index.d.cts end with `export = PokerHand` and still carry HandRank, Card, etc.
+export declare namespace PokerHand {
+  export type { Card, Rank, Suit };
+  export { CompareResult, HandRank, PokerHand, PokerHand as default };
+}
+
+// Runtime side: what the namespace above promises, so that `require()` can return the
+// class itself (as in 1.0.1) and still offer `const { HandRank } = require(...)`.
+Object.assign(PokerHand, { PokerHand, default: PokerHand, HandRank, CompareResult });
