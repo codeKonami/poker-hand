@@ -25,6 +25,7 @@
     },
     "./dist/pokerhand.min.js": "./dist/pokerhand.min.js",
     "./package.json": "./package.json",
+    "./package": "./package.json",
     "./index": {
       "import": "./dist/index.mjs",
       "default": "./index.js"
@@ -49,6 +50,8 @@
     "./src/utils/eval-rank.js": "./src/utils/eval-rank.js",
     "./src/utils/is-valid-card": "./src/utils/is-valid-card.js",
     "./src/utils/is-valid-card.js": "./src/utils/is-valid-card.js",
+    "./src/arrays": "./src/arrays/index.js",
+    "./src/arrays/": "./src/arrays/index.js",
     "./src/arrays/index": "./src/arrays/index.js",
     "./src/arrays/index.js": "./src/arrays/index.js",
     "./src/arrays/flushes": "./src/arrays/flushes.js",
@@ -64,7 +67,13 @@
     "./src/arrays/unique5": "./src/arrays/unique5.js",
     "./src/arrays/unique5.js": "./src/arrays/unique5.js",
     "./src/arrays/values": "./src/arrays/values.js",
-    "./src/arrays/values.js": "./src/arrays/values.js"
+    "./src/arrays/values.js": "./src/arrays/values.js",
+    "./example": "./example/index.js",
+    "./example/": "./example/index.js",
+    "./example/index": "./example/index.js",
+    "./example/index.js": "./example/index.js",
+    "./dist/pokerhand.min": "./dist/pokerhand.min.js",
+    "./*/": "./*/index.js"
   },
   "engines": {
     "node": ">=6"
@@ -74,7 +83,8 @@
     "index.js",
     "src/pokerhand.js",
     "src/utils",
-    "src/arrays"
+    "src/arrays",
+    "example"
   ],
   "sideEffects": false,
   "scripts": {
