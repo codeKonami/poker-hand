@@ -35,6 +35,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsdown",
+    "es-check": "es-check --config=.escheckrc",
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "tsx src/bench.ts",
@@ -60,6 +61,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "2.6.9",
     "@types/jsdom": "^30.0.0",
+    "es-check": "^9.9.0",
     "jsdom": "^31.0.1",
     "publint": "^0.3.25",
     "tsdown": "^0.23.7",
