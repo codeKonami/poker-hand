@@ -66,9 +66,12 @@ function webpackUmdInEs5(): Rolldown.Plugin {
 export default defineConfig([
   {
     ...shared,
-    // dist/index.mjs + index.d.mts: the named exports and `export default PokerHand`.
+    // dist/index.d.mts only: the named exports and `export default PokerHand`.
     entry: { index: 'src/index.ts' },
     format: 'esm',
+    dts: { ...shared.dts, dtsOnly: true },
+    // dist/index.mjs, a wrapper over dist/index.cjs: one class for import and require() (#45).
+    copy: 'src/index.mjs',
   },
   {
     ...shared,

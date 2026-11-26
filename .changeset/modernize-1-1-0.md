@@ -6,9 +6,9 @@ Modernize the package (TypeScript, ES module and CommonJS builds, bundled types,
 
 #### What's new
 
-- **ES module entry.** `import PokerHand from 'poker-hand-evaluator'` now loads a native ES module build. The named exports `PokerHand`, `HandRank` and `CompareResult` are new: `import { PokerHand, HandRank } from 'poker-hand-evaluator'`. With `require()`, they are static properties of the class: `const { HandRank } = require('poker-hand-evaluator')`.
+- **ES module entry.** `import PokerHand from 'poker-hand-evaluator'` now loads an ES module, `dist/index.mjs`. It is a thin wrapper over the CommonJS build, so `import` and `require()` give the same `PokerHand` class, as in 1.0.1, in Node.js and in bundlers: `instanceof` holds across them. The named exports `PokerHand`, `HandRank` and `CompareResult` are new: `import { PokerHand, HandRank } from 'poker-hand-evaluator'`. With `require()`, they are static properties of the class, the same objects: `const { HandRank } = require('poker-hand-evaluator')`.
 - **TypeScript types**, for `import` (`dist/index.d.mts`) and for `require()` (`dist/index.d.cts`). `HandRank` and `CompareResult` are plain objects, and each is also the type of its values, so a literal fits where a rank is expected: `const r: HandRank = 'FLUSH'`. `Card`, `Rank` and `Suit` are exported as types.
-- **Much smaller bundles.** The four lookup tables are generated when the package loads, instead of shipping as data. A minified bundle that uses `PokerHand` drops from about 100.5 kB to about 3.8 kB (37.4 kB to 1.7 kB gzipped), and `dist/pokerhand.min.js` from 101.7 kB to 5.6 kB (37.8 kB to 2.4 kB gzipped). Loading the package takes about 1 ms longer, and the scores are unchanged.
+- **Much smaller bundles.** The four lookup tables are generated when the package loads, instead of shipping as data. A minified bundle that uses `PokerHand` drops from about 100 kB to 4.1–5.3 kB (37 kB to 1.8–2.2 kB gzipped), depending on the bundler (webpack 5, esbuild, Rollup 4 with `@rollup/plugin-commonjs`, Vite 8). The size is the same whichever export you import: bundlers keep the CommonJS build whole, as they kept 1.0.1's. `dist/pokerhand.min.js` drops from 101.7 kB to 5.6 kB (37.8 kB to 2.4 kB gzipped). Loading the package takes about 1 ms longer, and the scores are unchanged.
 
 #### Documented behaviour changes
 
@@ -17,7 +17,8 @@ None of these breaks code written for 1.0.1.
 - `describe().hand` returns a copy. In 1.0.1, it was the instance's own `hand` array, so changing it changed `hand` and `toString()`.
 - `Object.keys(PokerHand)` returns `['PokerHand', 'default', 'HandRank', 'CompareResult']` instead of `[]`. These static properties are enumerable on purpose: the `import` interop helpers of TypeScript and Babel only copy enumerable keys.
 - `import { PokerHand } from 'poker-hand-evaluator/dist/pokerhand.min.js'` gives the class, instead of `undefined`.
-- `package.json` has an `exports` map, and still no `module` field, as in 1.0.1. Tools that read `exports` give `import` the ES module build, and the others keep `main`, the CommonJS build. Without a `module` field, webpack 4 still gives `require()` the class.
+- `import` of the deep paths `index` and `src/pokerhand` gives the main entry. Its default export is the class, the one `require()` gives, as in 1.0.1, and its namespace also has the named exports `PokerHand`, `HandRank` and `CompareResult`.
+- `package.json` has an `exports` map, and still no `module` field, as in 1.0.1. Tools that read `exports` give `import` the ES module wrapper and `require()` the CommonJS build, and the others keep `main`, the CommonJS build. Without a `module` field, webpack 4 still gives `require()` the class.
 - `package.json` declares `"type": "commonjs"`, which is Node.js's default and so 1.0.1's: every published `.js` file is still CommonJS.
 - `package.json` declares `"sideEffects": ["./example/index.js"]`, so bundlers can drop the package when nothing of it is used. A bundler can also drop a bare `import` of `dist/pokerhand.min.js`, but under a bundler that import set no `window.PokerHand` with 1.0.1 either. `example` keeps printing its logs.
 
@@ -48,5 +49,4 @@ They are deprecated: every 1.x keeps serving them, and they are slated for remov
 
 - `require('poker-hand-evaluator/')`, the package name with a trailing slash, no longer resolves (`ERR_PACKAGE_PATH_NOT_EXPORTED`): no `exports` key can serve it. Drop the slash.
 - The deep paths with a trailing slash, `src/arrays/` and `example/`, still resolve, but print Node.js's own deprecation warning: DEP0155, or DEP0148 on Node.js 16. The other forms print nothing.
-- `import` of `index` or `src/pokerhand` gives the ES module entry: its default export is the class that `import PokerHand from 'poker-hand-evaluator'` gives, and its namespace has the main entry's named exports. `require()` of these paths gives the CommonJS class, as in 1.0.1.
-- A program that mixes `import` and `require()` loads both builds, so it gets two `PokerHand` classes. `compareWith()` accepts hands from both, but `instanceof` across them is `false`. In 1.0.1, `import` went through Node.js's CommonJS interop and gave the same class.
+- On Node.js 23 and later, `import * as ns` of the package (or of `index`/`src/pokerhand`) no longer has the `'module.exports'` key that Node.js adds to CommonJS namespaces: the ES module entry is now an ES module wrapper, and a string export name would need ES2022, which Node.js 12.17 rejects. Use the default export, which is the same class.

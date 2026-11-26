@@ -41,7 +41,36 @@ describe("import from 'poker-hand-evaluator' (ES module consumer)", () => {
   });
 
   // An ES module app with a CommonJS dependency that also uses the package. 1.0.1 had one
-  // CommonJS copy; a dual package loads two PokerHand classes, and compareWith() must take both.
+  // CommonJS file, which import reached through Node.js's CommonJS interop, so both got one
+  // class. 1.1.0 keeps one class: its ES module entry wraps the CommonJS build (#45).
+  it('import and require() give the same class', () => {
+    const run = target.runEsm(`
+      import { createRequire } from 'node:module';
+      import PokerHand from 'poker-hand-evaluator';
+      const RequiredPokerHand = createRequire(import.meta.url)('poker-hand-evaluator');
+      console.log(JSON.stringify(PokerHand === RequiredPokerHand));
+    `);
+
+    expect(run).toEqual({ ok: true, value: true });
+  });
+
+  it('a hand from import is an instance of the class from require(), and the other way round', () => {
+    const run = target.runEsm(`
+      import { createRequire } from 'node:module';
+      import PokerHand from 'poker-hand-evaluator';
+      const RequiredPokerHand = createRequire(import.meta.url)('poker-hand-evaluator');
+      console.log(JSON.stringify({
+        importedIsRequired: new PokerHand('AS KS QS JS TS') instanceof RequiredPokerHand,
+        requiredIsImported: new RequiredPokerHand('AS KS QS JS TS') instanceof PokerHand,
+      }));
+    `);
+
+    expect(run).toEqual({
+      ok: true,
+      value: { importedIsRequired: true, requiredIsImported: true },
+    });
+  });
+
   it('compareWith() compares a hand from import with a hand from require()', () => {
     const run = target.runEsm(`
       import { createRequire } from 'node:module';
@@ -80,6 +109,24 @@ describe("import from 'poker-hand-evaluator' (ES module consumer)", () => {
       `);
 
       expect(run).toEqual({ ok: true, value: true });
+    });
+
+    it('each named export is the property of that name of the class from require()', () => {
+      const run = target.runEsm(`
+        import { createRequire } from 'node:module';
+        import { PokerHand, HandRank, CompareResult } from 'poker-hand-evaluator';
+        const required = createRequire(import.meta.url)('poker-hand-evaluator');
+        console.log(JSON.stringify({
+          PokerHand: PokerHand === required.PokerHand,
+          HandRank: HandRank === required.HandRank,
+          CompareResult: CompareResult === required.CompareResult,
+        }));
+      `);
+
+      expect(run).toEqual({
+        ok: true,
+        value: { PokerHand: true, HandRank: true, CompareResult: true },
+      });
     });
   });
 });

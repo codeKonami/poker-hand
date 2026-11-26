@@ -93,7 +93,9 @@ function observation(of: Consumer, specifier: string, observe: Observe) {
 /**
  * How an ES module sees a deep path, in a child `node`:
  * - `class`: the PokerHand class, by its use and by whether it is the main entry's default
- *   import. 1.0.1 had one class; 1.1.0 gives its ES module class to `import` (#16).
+ *   import and the class require() gives for the same path. 1.0.1 had one class, and so does
+ *   1.1.0, whose ES module entry wraps the CommonJS build (#45). Its namespace is the main
+ *   entry's, not compared: 1.0.1 had no named exports.
  * - `module`: anything else, which must be the very object require() returns, under the same
  *   export names (Node finds the names of a CommonJS module by reading its code).
  * - `json`: package.json, which needs an import attribute.
@@ -107,6 +109,7 @@ function importObservation(of: Consumer, specifier: string, kind: ImportKind): E
   const source =
     kind === 'class'
       ? `
+        import { createRequire } from 'node:module';
         import * as namespace from '${specifier}';
         import main from '${PACKAGE}';
         const value = namespace.default;
@@ -114,6 +117,7 @@ function importObservation(of: Consumer, specifier: string, kind: ImportKind): E
           type: typeof value,
           describe: new value('as kh qd jc ts').describe(),
           isMainImport: value === main,
+          isRequired: value === createRequire(import.meta.url)('${specifier}'),
         }));`
       : `
         import { createRequire } from 'node:module';
