@@ -11,3 +11,4 @@ La modernisation de poker-hand-evaluator (TypeScript, ESM + CJS, types fournis, 
 
 - Trois changements ne sont pas des ruptures : l'abandon d'un runtime en fin de vie, s'il est déclaré dans `engines` et dans le CHANGELOG ; une relaxation documentée ; la copie renvoyée par `describe().hand`.
 - Le champ `version` de `package.json` reste celui de la dernière version publiée. Changesets fait le passage de version au moment de la release.
+- La 1.x garde ce que la 1.0.1 permettait, même quand ça coûte au mainteneur : Node ≥ 6, un UMD en ES5, et tous les chemins profonds sauf `pkg/`. En contrepartie, la 2.0.0 se fera sans aucune contrainte de rétrocompatibilité : elle pourra moderniser tout le projet.
