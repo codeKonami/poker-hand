@@ -331,19 +331,77 @@ describe('runtime warnings of the deep paths', () => {
   );
 });
 
-// eval-hand takes cards that sanitize has already checked. On an invalid card 1.0.1 failed with
-// a TypeError, whose message depended on the JavaScript engine, so only the type is compared.
-// Not covered: an invalid suit (AX). 1.0.1 read it as no suit and returned a score (1600 for
-// AX KC QC JC TC); 1.1.0 throws the TypeError, as decided in #16.
-describe('src/utils/eval-hand on cards it was not meant for (characterization)', () => {
-  it.each([
-    ['an invalid rank', ['ZS', 'KC', 'QC', 'JC', 'TC']],
-    ['lowercase cards', ['as', 'kc', 'qc', 'jc', 'tc']],
-    ['four cards', ['AS', 'KS', 'QS', 'JS']],
-  ])('%s', (_, hand) => {
+const ROYAL = ['AS', 'KS', 'QS', 'JS', 'TS'];
+
+// Inputs each util was not meant for. Each shim must return what 1.0.1 returned, or throw the
+// same error type with the same message: both packages run in the same JavaScript engine, so
+// even an engine-dependent TypeError message must match.
+const UTIL_INPUTS: [path: string, label: string, input: unknown][] = [
+  ['src/utils/sanitize', 'lowercase', 'jh qd 8s 5c 6d'],
+  ['src/utils/sanitize', 'an invalid rank', 'ZS KS QS JS TS'],
+  ['src/utils/sanitize', 'an invalid suit', 'AX KS QS JS TS'],
+  ['src/utils/sanitize', 'spaces around', '  AS KS QS JS TS  '],
+  ['src/utils/sanitize', 'two spaces inside', 'AS  KS QS JS T'],
+  ['src/utils/sanitize', 'a tab', 'AS\tKS QS JS TS'],
+  ['src/utils/sanitize', 'duplicates', 'AS KS QS JS AS'],
+  ['src/utils/sanitize', 'duplicates in different cases', 'as KS QS JS AS'],
+  ['src/utils/sanitize', 'four cards', 'AS KS QS JS'],
+  ['src/utils/sanitize', 'six cards', 'AS KS QS JS TS 9S'],
+  ['src/utils/sanitize', 'nothing', undefined],
+  ['src/utils/sanitize', 'null', null],
+  ['src/utils/sanitize', '0', 0],
+  ['src/utils/sanitize', 'an array of cards', ROYAL],
+  ['src/utils/sanitize', 'a String object', new String('AS KS QS JS TS')],
+  ['src/utils/eval-hand', 'an invalid rank', ['ZS', 'KC', 'QC', 'JC', 'TC']],
+  ['src/utils/eval-hand', 'an invalid suit', ['AX', 'KC', 'QC', 'JC', 'TC']],
+  ['src/utils/eval-hand', 'only invalid suits', ['AX', 'KX', 'QX', 'JX', 'TX']],
+  ['src/utils/eval-hand', 'lowercase', ['as', 'kc', 'qc', 'jc', 'tc']],
+  ['src/utils/eval-hand', 'lowercase suits', ['As', 'Ks', 'Qs', 'Js', 'Ts']],
+  ['src/utils/eval-hand', 'a space before a card', [' AS', 'KS', 'QS', 'JS', 'TS']],
+  ['src/utils/eval-hand', 'a space after a card', ['AS ', 'KS', 'QS', 'JS', 'TS']],
+  ['src/utils/eval-hand', 'five times the same card', ['AS', 'AS', 'AS', 'AS', 'AS']],
+  ['src/utils/eval-hand', 'a duplicate', ['AS', 'AH', 'AD', 'AC', 'AS']],
+  ['src/utils/eval-hand', 'no cards', []],
+  ['src/utils/eval-hand', 'four cards', ['AS', 'KS', 'QS', 'JS']],
+  ['src/utils/eval-hand', 'six cards', [...ROYAL, '9S']],
+  ['src/utils/eval-hand', 'six cards, the sixth invalid', [...ROYAL, 'ZZ']],
+  ['src/utils/eval-hand', 'numbers', [1, 2, 3, 4, 5]],
+  ['src/utils/eval-hand', 'a null card', [null, 'KS', 'QS', 'JS', 'TS']],
+  ['src/utils/eval-hand', 'a string', 'AS KS QS JS TS'],
+  ['src/utils/eval-hand', 'nothing', undefined],
+  ['src/utils/eval-rank', '0', 0],
+  ['src/utils/eval-rank', 'a negative score', -5],
+  ['src/utils/eval-rank', 'the worst score', 7462],
+  ['src/utils/eval-rank', 'above the worst score', 7463],
+  ['src/utils/eval-rank', 'a fraction', 3325.5],
+  ['src/utils/eval-rank', 'a numeric string', '7000'],
+  ['src/utils/eval-rank', 'a string', 'FLUSH'],
+  ['src/utils/eval-rank', 'nothing', undefined],
+  ['src/utils/eval-rank', 'null', null],
+  ['src/utils/eval-rank', 'NaN', Number.NaN],
+  ['src/utils/eval-rank', 'true', true],
+  ['src/utils/eval-rank', 'a symbol', Symbol('score')],
+  ['src/utils/is-valid-card', 'mixed case', 'Kh'],
+  ['src/utils/is-valid-card', 'an invalid rank', 'ZS'],
+  ['src/utils/is-valid-card', 'an invalid suit', 'AX'],
+  ['src/utils/is-valid-card', 'ten as 10', '10'],
+  ['src/utils/is-valid-card', 'a space before', ' K'],
+  ['src/utils/is-valid-card', 'a space after', 'K '],
+  ['src/utils/is-valid-card', 'one character', 'K'],
+  ['src/utils/is-valid-card', 'three characters', 'KHS'],
+  ['src/utils/is-valid-card', 'null', null],
+  ['src/utils/is-valid-card', 'an array of two characters', ['K', 'H']],
+  ['src/utils/is-valid-card', 'a String object', new String('KH')],
+];
+
+describe('deep-path utils on inputs they were not meant for (characterization)', () => {
+  it.each(UTIL_INPUTS)('%s with %s', (path, _, input) => {
     const observe = (of: Consumer) => {
-      const error = thrown(() => of.require(`${PACKAGE}/src/utils/eval-hand`)(hand));
-      return typeof error === 'object' && error.type === 'TypeError' ? error.type : error;
+      let value: unknown;
+      const error = thrown(() => {
+        value = of.require(`${PACKAGE}/${path}`)(input);
+      });
+      return error === 'no error' ? { value } : { error };
     };
 
     expect(observe(target)).toEqual(observe(reference));
