@@ -29,7 +29,7 @@ function findIt(key: number): number {
  * Credit to Cactus Kev's algorithm:
  * http://suffe.cool/poker/code/pokerlib.c
  */
-export function evaluateHand(hand: string[]): number {
+export function evaluateHand(hand: readonly string[]): number {
   const cards = hand.map(cardToInt);
   const q = (cards[0] | cards[1] | cards[2] | cards[3] | cards[4]) >> 16;
 

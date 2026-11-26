@@ -3,46 +3,46 @@ import { parseHand } from './validate';
 
 describe('parseHand', () => {
   describe('Errors', () => {
-    it('Should throw if nothing passed', () => {
+    it('Should throw "Hand must be defined" if nothing passed', () => {
       expect(() => {
         parseHand(undefined);
-      }).toThrow();
+      }).toThrow(/^Hand must be defined$/);
     });
 
-    it("Should throw if empty ('') is passed", () => {
+    it("Should throw \"Hand must be defined\" if empty ('') is passed", () => {
       expect(() => {
         parseHand('');
-      }).toThrow();
+      }).toThrow(/^Hand must be defined$/);
     });
 
-    it('Should throw if an integer is passed', () => {
+    it('Should throw "Hand must be a String" if an integer is passed', () => {
       expect(() => {
         parseHand(2);
-      }).toThrow();
+      }).toThrow(/^Hand must be a String$/);
     });
 
-    it('Should throw if a string with a length !== 14 is passed', () => {
+    it('Should throw "Incorrect hand" if a string with a length !== 14 is passed', () => {
       expect(() => {
         parseHand('KS 2H 5C JD');
-      }).toThrow();
+      }).toThrow(/^Incorrect hand$/);
     });
 
-    it("Should throw if we can't find 5 cards", () => {
+    it("Should throw \"Incorrect hand\" if we can't find 5 cards", () => {
       expect(() => {
         parseHand('KSD 2HD D5C JD');
-      }).toThrow();
+      }).toThrow(/^Incorrect hand$/);
     });
 
-    it('Should throw if there are duplicates', () => {
+    it('Should throw "Hand has duplicates" if there are duplicates', () => {
       expect(() => {
         parseHand('KS 2H 5C JD JD');
-      }).toThrow();
+      }).toThrow(/^Hand has duplicates$/);
     });
 
-    it('Should throw if there are impossible cards', () => {
+    it('Should throw "Incorrect hand" if there are impossible cards', () => {
       expect(() => {
         parseHand('KS 2H 5C ZK WS');
-      }).toThrow();
+      }).toThrow(/^Incorrect hand$/);
     });
   });
 
