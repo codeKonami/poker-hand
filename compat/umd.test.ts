@@ -16,6 +16,7 @@ describe(`UMD build ${UMD}`, () => {
     const script = window.document.createElement('script');
     script.textContent = source;
     window.document.body.appendChild(script);
+    // biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
     const { PokerHand } = window as unknown as { PokerHand: any };
 
     expect(typeof PokerHand).toBe('function');
