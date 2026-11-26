@@ -49,3 +49,4 @@ They are deprecated: every 1.x keeps serving them, and they are slated for remov
 
 - `require('poker-hand-evaluator/')`, the package name with a trailing slash, no longer resolves (`ERR_PACKAGE_PATH_NOT_EXPORTED`): no `exports` key can serve it. Drop the slash.
 - The deep paths with a trailing slash, `src/arrays/` and `example/`, still resolve, but print Node.js's own deprecation warning: DEP0155, or DEP0148 on Node.js 16. The other forms print nothing.
+- On Node.js 23 and later, `import * as ns` of the package (or of `index`/`src/pokerhand`) no longer has the `'module.exports'` key that Node.js adds to CommonJS namespaces: the ES module entry is now an ES module wrapper, and a string export name would need ES2022, which Node.js 12.17 rejects. Use the default export, which is the same class.
