@@ -59,7 +59,11 @@ console.log(myPokerHand.getRank() === HandRank.TwoPairs); // true
 console.log(myPokerHand.compareWith(hisPokerHand) === CompareResult.Win); // true
 ```
 
-In a minified bundle that uses `PokerHand`, the package takes about 3.8 kB (1.7 kB gzipped).
+`import` and `require()` give the same `PokerHand` class, as in 1.0.1. An ES module app whose
+CommonJS dependencies also use the package gets one class, and `instanceof` holds across them.
+
+In a minified bundle, the package takes 4.1 to 5.3 kB (1.8 to 2.2 kB gzipped), depending on the
+bundler, whichever of its exports you import.
 
 ### TypeScript
 
@@ -175,8 +179,9 @@ Every error is a plain `Error`, with the same message as in 1.0.1:
 - **Browsers**, through `dist/pokerhand.min.js`. The file is ES5, but needs native `Map` and `Set`
   that accept an iterable, as 1.0.1 did: Chrome 38, Firefox 13, Safari 9, Edge 12 or later.
   Internet Explorer 11 is not supported, and 1.0.1 did not work there either.
-- **Bundlers** read the `exports` map: `import` gets the ES module build, and `require()` the
-  CommonJS build.
+- **Bundlers** read the `exports` map: `import` gets a thin ES module wrapper over the CommonJS
+  build, and `require()` the CommonJS build itself. Rollup needs `@rollup/plugin-commonjs`, as it
+  did for 1.0.1. Checked with webpack 5, esbuild, Rollup 4 and Vite 8.
 
 ## Upgrading from 1.0.1
 
