@@ -25,6 +25,32 @@
       "quoteStyle": "single"
     }
   },
+  "overrides": [
+    {
+      "includes": ["compat/smoke/**"],
+      "javascript": {
+        "formatter": {
+          "trailingCommas": "es5"
+        }
+      },
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useOptionalChain": "off"
+          },
+          "style": {
+            "useNodejsImportProtocol": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [".changeset/*.md"],
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {

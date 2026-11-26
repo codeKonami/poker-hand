@@ -1,6 +1,6 @@
 {
   "name": "poker-hand-evaluator",
-  "version": "2.0.0",
+  "version": "1.0.1",
   "description": "Poker Texas Holdem Hand Evaluator using Cactus Kev's algorithm",
   "keywords": [
     "poker",
@@ -35,6 +35,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsdown",
+    "es-check": "es-check --config=.escheckrc",
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "tsx src/bench.ts",
@@ -45,7 +46,8 @@
     "compat": "vitest run --config compat/vitest.config.mts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
-    "compat:attw": "attw --pack ."
+    "compat:attw": "attw --pack .",
+    "compat:smoke": "node compat/smoke/run.cjs"
   },
   "repository": {
     "type": "git",
@@ -59,7 +61,9 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "2.6.9",
+    "@changesets/cli": "^3.0.3",
     "@types/jsdom": "^30.0.0",
+    "es-check": "^9.9.0",
     "jsdom": "^31.0.1",
     "publint": "^0.3.25",
     "tsdown": "^0.23.7",

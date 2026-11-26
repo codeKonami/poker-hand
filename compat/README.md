@@ -14,6 +14,7 @@ reach it the way a user would: `require()`, `import`, a `<script>` tag, or a dee
 | `COMPAT_TARGET=reference npm run compat`     | runs the suite against 1.0.1 itself: **must be all green** (tests added after 1.0.1 are skipped) |
 | `COMPAT_TARGET=path/to/x.tgz npm run compat` | runs the suite against any tarball                                                               |
 | `npm run compat:lint`                        | builds, then `publint --strict` and `attw --pack .` (also `compat:publint`, `compat:attw`)       |
+| `npm run compat:smoke -- path/to/x.tgz`      | smoke test of a tarball on the current Node; CI runs it on Node 6 to 20 (see `smoke/`)           |
 
 ## Files
 
@@ -24,6 +25,7 @@ reach it the way a user would: `require()`, `import`, a `<script>` tag, or a dee
 | `types.test.ts`        | TypeScript projects that use the package  | the shipped `.d.cts`/`.d.mts` under node16 (CommonJS and ES module) and bundler (new in 1.1.0)                                                                                          |
 | `exhaustive.test.ts`   | both packages side by side                | any score or rank drift over the 2,598,960 five-card hands                                                                                                                              |
 | `umd.test.ts`          | `dist/pokerhand.min.js`                   | `window.PokerHand` from a `<script>` (jsdom), `require()` of the file                                                                                                                   |
+| `smoke/`               | `require()` and `import`, on Node 6 to 20 | entry point, API, sample scores and error messages on old Node, plus `import` from 12.17; plain ES2015 without Vitest, so that it runs on Node 6                                        |
 | `deep-imports.test.ts` | `require('poker-hand-evaluator/src/...')` | 1.0.1's deep paths, compared with what 1.0.1 exports; characterization only, the decision belongs to [Imports profonds de la 1.0.1](https://github.com/codeKonami/poker-hand/issues/16) |
 
 ## Rules

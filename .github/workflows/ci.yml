@@ -1,0 +1,153 @@
+name: CI
+
+# One tarball, built once by `build`, checked by es-check, compat/ and the smoke test.
+# release.yml calls this workflow too, and publishes that same tarball.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  # A release run (workflow_call from release.yml) is never cancelled.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  build:
+    name: Build and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: npm ci
+      - run: npm run build
+      - name: Pack
+        run: |
+          mkdir -p "$RUNNER_TEMP/package"
+          npm pack --pack-destination "$RUNNER_TEMP/package"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: ${{ runner.temp }}/package/*.tgz
+          if-no-files-found: error
+          # A re-run uploads it again.
+          overwrite: true
+
+  es-check:
+    name: es-check (Node builds are ES2015)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
+      - name: Unpack the dist/ of the tarball
+        run: tar -xzf "$RUNNER_TEMP"/package/*.tgz --strip-components=1 package/dist
+      - run: npm run es-check
+
+  compat:
+    name: compat (Node ${{ matrix.node }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Maintained LTS lines; the dev tooling needs ^22.22.2 || ^24.15.0 || >=26.
+        node: [22, 24, 26]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
+      - name: Self-check against 1.0.1 (must be all green)
+        run: npm run compat
+        env:
+          COMPAT_TARGET: reference
+      - name: compat/ against the tarball
+        run: COMPAT_TARGET="$(ls "$RUNNER_TEMP"/package/*.tgz)" npm run compat
+
+  compat-lint:
+    name: compat:lint (publint, attw)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: npm ci
+      - run: npm run compat:lint
+
+  smoke:
+    name: smoke (Node ${{ matrix.node }})
+    needs: build
+    # setup-node has Node 6 to 16 for linux-x64 only.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 12.17.0 is the first release with `import` without a flag.
+        node: ["6", "8", "10", "12.17.0", "12", "14", "16", "18", "20"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: package
+          path: ${{ runner.temp }}/package
+      # No npm here: Node 6 only has npm 3, and run.cjs unpacks the tarball by hand.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Self-check against 1.0.1 (must be all green)
+        run: node compat/smoke/run.cjs compat/fixtures/poker-hand-evaluator-1.0.1.tgz
+      - name: Smoke test the tarball
+        run: node compat/smoke/run.cjs "$RUNNER_TEMP"/package/*.tgz
