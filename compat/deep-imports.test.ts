@@ -38,6 +38,9 @@ const table: Observe = (value) =>
       ? { type: 'Array', length: value.length, sha1: digest(value) }
       : { type: typeof value, keys: Object.keys(value) };
 
+const tables: Observe = (arrays, of) =>
+  Object.fromEntries(Object.entries(arrays).map(([k, v]) => [k, table(v, of)]));
+
 const DEEP_MODULES: [path: string, observe: Observe][] = [
   ['index', pokerHandClass],
   ['src/pokerhand', pokerHandClass],
@@ -66,10 +69,7 @@ const DEEP_MODULES: [path: string, observe: Observe][] = [
     'src/utils/is-valid-card',
     (isValidCard) => ['KH', 'kh', 'zm', 'AZZ', '', 2, undefined].map(isValidCard),
   ],
-  [
-    'src/arrays/index',
-    (arrays, of) => Object.fromEntries(Object.entries(arrays).map(([k, v]) => [k, table(v, of)])),
-  ],
+  ['src/arrays/index', tables],
   ['src/arrays/flushes', table],
   ['src/arrays/hand-ranks', table],
   ['src/arrays/products', table],
@@ -151,6 +151,105 @@ describe('deep imports published in 1.0.1 (characterization)', () => {
       );
     });
   });
+});
+
+// The other forms 1.0.1 resolved: a directory with or without its trailing slash, package.json
+// with or without its extension, the UMD build without its extension, and the example. The UMD
+// build itself (dist/pokerhand.min.js) belongs to umd.test.ts and #19.
+const OTHER_REQUIRES: [path: string, sameAs: string, observe: Observe][] = [
+  ['src/arrays', 'src/arrays/index.js', tables],
+  ['package', 'package.json', (manifest) => manifest.name],
+  ['package.json', 'package.json', (manifest) => manifest.name],
+  ['dist/pokerhand.min', 'dist/pokerhand.min.js', pokerHandClass],
+];
+
+// [path, the 1.0.1 form it must import like, how to observe it]. The path resolved under import
+// in 1.0.1 when it is its own 1.0.1 form; otherwise it is new in 1.1.0 (#16).
+const OTHER_IMPORTS: [path: string, like: string, kind: ImportKind][] = [
+  ['src/arrays', 'src/arrays/index.js', 'module'],
+  ['src/arrays/', 'src/arrays/index.js', 'module'],
+  ['package.json', 'package.json', 'json'],
+  ['package', 'package.json', 'json'],
+  ['dist/pokerhand.min.js', 'dist/pokerhand.min.js', 'class'],
+  ['dist/pokerhand.min', 'dist/pokerhand.min.js', 'class'],
+];
+
+const EXAMPLES = ['example', 'example/', 'example/index', 'example/index.js'];
+
+/** What the example prints when a CommonJS script requires it, or an ES module imports it. */
+function exampleRun(of: Consumer, specifier: string, system: 'require' | 'import') {
+  const { status, stdout } =
+    system === 'require'
+      ? of.runScript(`console.log(JSON.stringify(require('${specifier}')));`, '.cjs')
+      : of.runScript(`import '${specifier}';`, '.mjs');
+  return { status, stdout };
+}
+
+describe('other forms of the deep paths (characterization)', () => {
+  it.each(OTHER_REQUIRES)(`require(${PACKAGE}/%s)`, (path, sameAs, observe) => {
+    const observeAs: Observe = (value, of) => ({
+      isSameAs: value === of.require(`${PACKAGE}/${sameAs}`),
+      value: observe(value, of),
+    });
+    const expected = observation(reference, `${PACKAGE}/${path}`, observeAs);
+    expect(expected.ok, 'the 1.0.1 observation itself failed').toBe(true);
+
+    expect(observation(target, `${PACKAGE}/${path}`, observeAs)).toEqual(expected);
+  });
+
+  // In a child node: Node warns about this form (see "runtime warnings" below).
+  it(`require(${PACKAGE}/src/arrays/)`, () => {
+    const isIndex = (of: Consumer) =>
+      of.runCjs(`
+        const arrays = require('${PACKAGE}/src/arrays/');
+        console.log(JSON.stringify(arrays === require('${PACKAGE}/src/arrays/index.js')));
+      `);
+
+    expect(isIndex(reference)).toEqual({ ok: true, value: true });
+    expect(isIndex(target)).toEqual(isIndex(reference));
+  });
+
+  it.each(EXAMPLES)(`require(${PACKAGE}/%s) runs the example, logs included`, (path) => {
+    const expected = exampleRun(reference, `${PACKAGE}/${path}`, 'require');
+    expect(expected.status, 'the 1.0.1 example itself failed').toBe(0);
+
+    expect(exampleRun(target, `${PACKAGE}/${path}`, 'require')).toEqual(expected);
+  });
+
+  it.each(OTHER_IMPORTS.filter(([path, like]) => path === like))(
+    `import(${PACKAGE}/%s)`,
+    (path, _, kind) => {
+      const expected = importObservation(reference, `${PACKAGE}/${path}`, kind);
+      expect(expected.ok, 'the 1.0.1 observation itself failed').toBe(true);
+
+      expect(importObservation(target, `${PACKAGE}/${path}`, kind)).toEqual(expected);
+    },
+  );
+
+  it.skipIf(isReferenceRun).each(OTHER_IMPORTS.filter(([path, like]) => path !== like))(
+    `import(${PACKAGE}/%s) is like %s (new in 1.1.0)`,
+    (path, like, kind) => {
+      expect(importObservation(target, `${PACKAGE}/${path}`, kind)).toEqual(
+        importObservation(reference, `${PACKAGE}/${like}`, kind),
+      );
+    },
+  );
+
+  it(`import(${PACKAGE}/example/index.js) runs the example, logs included`, () => {
+    const expected = exampleRun(reference, `${PACKAGE}/example/index.js`, 'import');
+    expect(expected.status, 'the 1.0.1 example itself failed').toBe(0);
+
+    expect(exampleRun(target, `${PACKAGE}/example/index.js`, 'import')).toEqual(expected);
+  });
+
+  it.skipIf(isReferenceRun).each(EXAMPLES.filter((path) => path !== 'example/index.js'))(
+    `import(${PACKAGE}/%s) runs the example, logs included (new in 1.1.0)`,
+    (path) => {
+      expect(exampleRun(target, `${PACKAGE}/${path}`, 'import')).toEqual(
+        exampleRun(reference, `${PACKAGE}/example/index.js`, 'import'),
+      );
+    },
+  );
 });
 
 // eval-hand takes cards that sanitize has already checked. On an invalid card 1.0.1 failed with

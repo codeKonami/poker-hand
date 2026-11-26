@@ -18,28 +18,51 @@ export interface Consumer extends CompatConsumer {
    * and returns what it printed with `console.log(JSON.stringify(...))`.
    */
   runEsm: (source: string) => EsmRun;
+  /** The same as `runEsm`, for a CommonJS script. */
+  runCjs: (source: string) => EsmRun;
+  /** Runs `source` as a script of the consumer project in a child `node`, and returns its output as is. */
+  runScript: (source: string, extension: '.cjs' | '.mjs') => ScriptRun;
 }
 
 export type EsmRun = { ok: true; value: unknown } | { ok: false; error: string };
+
+export interface ScriptRun {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
 
 let probeCount = 0;
 
 function consumer(provided: CompatConsumer): Consumer {
   const require = createRequire(join(provided.dir, 'consumer.cjs'));
+
+  const runScript = (source: string, extension: '.cjs' | '.mjs'): ScriptRun => {
+    const file = join(provided.dir, `probe-${process.pid}-${probeCount++}${extension}`);
+    writeFileSync(file, source);
+    const { status, stdout, stderr } = spawnSync(process.execPath, [file], {
+      cwd: provided.dir,
+      encoding: 'utf8',
+    });
+    return { status, stdout, stderr };
+  };
+
+  const runJson = (source: string, extension: '.cjs' | '.mjs'): EsmRun => {
+    const child = runScript(source, extension);
+    if (child.status !== 0) {
+      const error = child.stderr.split('\n').find((line) => /Error/.test(line)) ?? child.stderr;
+      return { ok: false, error: error.trim() };
+    }
+    return { ok: true, value: JSON.parse(child.stdout) };
+  };
+
   return {
     ...provided,
     require,
     packageFile: (path) => join(provided.dir, 'node_modules', PACKAGE, path),
-    runEsm(source) {
-      const file = join(provided.dir, `probe-${process.pid}-${probeCount++}.mjs`);
-      writeFileSync(file, source);
-      const child = spawnSync(process.execPath, [file], { cwd: provided.dir, encoding: 'utf8' });
-      if (child.status !== 0) {
-        const error = child.stderr.split('\n').find((line) => /Error/.test(line)) ?? child.stderr;
-        return { ok: false, error: error.trim() };
-      }
-      return { ok: true, value: JSON.parse(child.stdout) };
-    },
+    runEsm: (source) => runJson(source, '.mjs'),
+    runCjs: (source) => runJson(source, '.cjs'),
+    runScript,
   };
 }
 
