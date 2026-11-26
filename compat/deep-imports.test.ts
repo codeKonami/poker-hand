@@ -90,3 +90,82 @@ describe('deep imports published in 1.0.1 (characterization)', () => {
     });
   });
 });
+
+// biome-ignore lint/suspicious/noExplicitAny: the package under test is untyped on purpose
+type Change = (table: any, of: Consumer) => () => void;
+
+/**
+ * Sets `table[key]` (an array index or a Map key) and returns how to restore it.
+ * The key can depend on the consumer's own tables.
+ */
+const set =
+  (key: number | string | ((of: Consumer) => number), value: unknown): Change =>
+  (table, of) => {
+    const at = typeof key === 'function' ? key(of) : key;
+    if (table instanceof Map) {
+      const saved = table.get(at);
+      table.set(at, value);
+      return () => table.set(at, saved);
+    }
+    const saved = table[at];
+    table[at] = value;
+    return () => {
+      table[at] = saved;
+    };
+  };
+
+// The primes of A, A, K, Q and J: the key of AS AH KD QC JS in products, and so in values.
+const ACES_UP_PRODUCT = 41 * 41 * 37 * 31 * 29;
+const acesUpIndex = (of: Consumer): number =>
+  of.require(`${PACKAGE}/src/arrays/products`).indexOf(ACES_UP_PRODUCT);
+
+const TABLE_CHANGES: [path: string, hand: string, change: Change][] = [
+  ['src/arrays/flushes', 'AS KS QS JS TS', set(0x1f00, 9999)],
+  ['src/arrays/unique5', 'AS KH QD JC TS', set(0x1f00, 9999)],
+  ['src/arrays/values', 'AS AH KD QC JS', set(acesUpIndex, 9999)],
+  // The binary search no longer finds the hand.
+  ['src/arrays/products', 'AS AH KD QC JS', set(acesUpIndex, 1)],
+  // The ace takes the order and prime of the king.
+  ['src/arrays/ranks', 'AS KH QD JC TS', set('A', [11, 37])],
+  // Spades become clubs.
+  ['src/arrays/suits', 'AS KS QS JS TC', set('S', 0x8000)],
+];
+
+function scoreOf(of: Consumer, hand: string) {
+  let score: unknown;
+  const error = thrown(() => {
+    score = new (of.require(PACKAGE))(hand).getScore();
+  });
+  return error === 'no error' ? score : error;
+}
+
+// In 1.0.1 a deep path gave the very table the evaluator reads: changing it changed the scores.
+// The tables are now generated at import (#33), so a shim must return the main entry's own
+// tables, not a second copy generated next to them.
+describe("deep-path tables are the evaluator's own (characterization)", () => {
+  it.each(TABLE_CHANGES)('changing %s changes the score of %s', (path, hand, change) => {
+    const observe = (of: Consumer) => {
+      const before = scoreOf(of, hand);
+      const restore = change(of.require(`${PACKAGE}/${path}`), of);
+      try {
+        return { before, changed: scoreOf(of, hand) };
+      } finally {
+        restore();
+      }
+    };
+
+    const expected = observe(reference);
+    expect(expected.changed, 'the change has no effect on 1.0.1').not.toEqual(expected.before);
+    expect(observe(target)).toEqual(expected);
+  });
+
+  it('src/arrays/index holds the same tables as their own paths', () => {
+    const observe = (of: Consumer) =>
+      Object.entries(of.require(`${PACKAGE}/src/arrays/index`)).map(([name, table]) => [
+        name,
+        table === of.require(`${PACKAGE}/src/arrays/${name}`),
+      ]);
+
+    expect(observe(target)).toEqual(observe(reference));
+  });
+});
