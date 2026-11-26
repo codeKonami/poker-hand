@@ -9,9 +9,8 @@
     "algorithm",
     "texas holdem"
   ],
-  "type": "module",
+  "type": "commonjs",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.cts",
   "exports": {
     ".": {
@@ -42,7 +41,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "compat": "vitest run --config compat/vitest.config.ts",
+    "compat": "vitest run --config compat/vitest.config.mts",
     "compat:lint": "npm run build && npm run compat:publint && npm run compat:attw",
     "compat:publint": "publint --strict",
     "compat:attw": "attw --pack ."
